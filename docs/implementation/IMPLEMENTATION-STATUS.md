@@ -9,7 +9,7 @@ Reference Implementation Workspace: FORMED
 Canonical Implementation Schema Baseline: FORMALIZED
 Component Registry Baseline: FORMALIZED
 Provider Registry Baseline: FORMALIZED
-Conformance Test Baseline: DEFINED / EXECUTED PARTIALLY
+Conformance Test Baseline: DEFINED / NOT YET EXECUTED
 Reference Runtime Deployment: PASS / READY
 R2 — Inngest Synchronization & Registration Evidence: CLOSED / SUPERSEDED
 R3 — Independently Verifiable Inngest Synchronization & Registration Evidence: CLOSED / PASS
@@ -17,12 +17,12 @@ R4 — Authorized Provider-Side Evidence Boundary: PASS
 R5 — Runtime Probe & Reference Implementation Evidence Gate: PASS / BASIC PROBE EVIDENCE
 R6 — Conformance Execution Readiness & Gate: CLOSED / REMEDIATED
 R7 — Executable Conformance Harness Design & Establishment Gate: PASS / SELF-VALIDATED
-R8 — Conformance Execution Gate: PARTIAL / BLOCKED AT RUNTIME-CONFORMANCE BOUNDARY
+R8 — Conformance Execution Gate: PRECONDITION RECORD / NOT A GOLDEN PATH FAILURE
 GAP-R6-01 — Executable conformance harness: CLOSED / PASS
-GAP-RD-04 — Runtime execution boundary: PASS / BASIC RUNTIME EVIDENCE
-GAP-RD-05 — Conformance execution: OPEN / PARTIAL; 2 PASS, 10 BLOCKED
-GAP-RD-07 — Unified evidence chain: OPEN / CONFORMANCE RESULTS PENDING
-Stage 18 Runtime Execution & Conformance: BLOCKED / GOLDEN PATH NOT EXECUTED
+GAP-RD-04 — Runtime execution boundary: CLOSED / PASS / AUTHORIZED BASIC RUNTIME EXECUTION
+GAP-RD-05 — Conformance execution: NOT AUTHORIZED / NOT EXECUTED
+GAP-RD-07 — Unified evidence chain: OPEN / CONFORMANCE NOT YET AUTHORIZED
+Stage 18 Runtime Execution & Conformance: NOT ACCEPTED / GOLDEN PATH NOT AUTHORIZED
 
 ## R8 — Conformance Execution Gate
 
@@ -144,3 +144,26 @@ The next remediation is therefore not to force R8 PASS. It is to establish the g
 8. Only then evaluate Golden Path E2E.
 9. Re-evaluate GAP-RD-05 and GAP-RD-07.
 10. Keep Stage 18 blocked until full acceptance.
+
+
+## Main Implementation Track — Runtime Boundary Remediation
+
+R1 Authorized Runtime Access: PASS. A finite 600-second Vercel URL protection mechanism was used without disabling SSO or Deployment Protection.
+
+R2 Application-Layer Verification: PASS. The authorized request reached production `/api/inngest` and returned application-level HTTP 401 JSON `{"message":"Unauthorized"}`. This proves application-layer reachability, not authenticated synchronization by unsigned GET.
+
+R3 Inngest Synchronization / Registration: PASS. Direct provider-side synchronization returned `success`; provider inspection confirmed app `aos-universe`, SERVE method, one registered function, and function `aos-runtime-probe` with trigger `aos/runtime.probe`.
+
+R4 Basic Runtime Execution: PASS. Production invocation of `aos-runtime-probe` completed successfully. Run `01M4BKEXMTNT2J815VACEGAJYS` completed in 717 ms with the expected runtime probe output and trace.
+
+GAP-RD-04 is therefore CLOSED / PASS for the scoped basic authorized runtime execution boundary.
+
+### Golden Path Boundary
+
+Golden Path remains DEFINED / NOT EXECUTED. The previous R8 execution record must not be interpreted as a Golden Path failure. Its ten BLOCKED runtime/E2E families represented missing conformance execution boundaries at that point, not failure of the Golden Path definition.
+
+No provider activation, Stage 18 acceptance, or Golden Path execution is authorized by the runtime remediation result.
+
+### Next Logical Action
+
+Continue Reference Implementation construction and governed runtime/evidence boundary work. Do not execute Golden Path until its execution prerequisites are explicitly proven and the separate Golden Path authorization gate is reached.
