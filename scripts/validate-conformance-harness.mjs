@@ -1,4 +1,4 @@
-const fs = require("node:fs");
+import fs from "node:fs";
 
 const manifestPath = "src/conformance/conformance-manifest.ts";
 const harnessPath = "src/conformance/harness.ts";
