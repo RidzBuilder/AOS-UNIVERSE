@@ -9,7 +9,7 @@ Reference Implementation Workspace: FORMED
 Canonical Implementation Schema Baseline: FORMALIZED
 Component Registry Baseline: FORMALIZED
 Provider Registry Baseline: FORMALIZED
-Conformance Test Baseline: DEFINED / NOT EXECUTED
+Conformance Test Baseline: DEFINED / EXECUTED PARTIALLY
 Reference Runtime Deployment: PASS / READY
 R2 — Inngest Synchronization & Registration Evidence: CLOSED / SUPERSEDED
 R3 — Independently Verifiable Inngest Synchronization & Registration Evidence: CLOSED / PASS
@@ -17,106 +17,98 @@ R4 — Authorized Provider-Side Evidence Boundary: PASS
 R5 — Runtime Probe & Reference Implementation Evidence Gate: PASS / BASIC PROBE EVIDENCE
 R6 — Conformance Execution Readiness & Gate: CLOSED / REMEDIATED
 R7 — Executable Conformance Harness Design & Establishment Gate: PASS / SELF-VALIDATED
+R8 — Conformance Execution Gate: PARTIAL / BLOCKED AT RUNTIME-CONFORMANCE BOUNDARY
 GAP-R6-01 — Executable conformance harness: CLOSED / PASS
 GAP-RD-04 — Runtime execution boundary: PASS / BASIC RUNTIME EVIDENCE
-GAP-RD-05 — Conformance execution: BLOCKED / NOT YET EXECUTED
+GAP-RD-05 — Conformance execution: OPEN / PARTIAL; 2 PASS, 10 BLOCKED
 GAP-RD-07 — Unified evidence chain: OPEN / CONFORMANCE RESULTS PENDING
 Stage 18 Runtime Execution & Conformance: BLOCKED / GOLDEN PATH NOT EXECUTED
 
-## R7 — Executable Conformance Harness Design & Establishment Gate
+## R8 — Conformance Execution Gate
 
-### R7-01 — Canonical Baseline Lock: PASS
-- Existing Conformance Test Baseline v0.1 remains the semantic source for the 12 conformance families.
-- Existing canonical implementation contracts remain unchanged.
-- R7 adds an execution mechanism; it does not redefine AOS semantics.
+### R8-01 — Canonical State Re-Lock: PASS
+R7 harness remains established and self-validated. The canonical implementation contracts and 12-family baseline remain unchanged.
 
-### R7-02 — Harness Requirement Extraction: PASS
-Each conformance test definition now explicitly carries:
-- test ID;
-- family;
-- requirement reference;
-- execution mode;
-- preconditions;
-- inputs;
-- expected behavior;
-- evidence requirements;
-- validation criteria;
-- provider-neutrality declaration.
+### R8-02 — Conformance Execution Authorization: PASS / SCOPED
+Execution was authorized only for tests whose current prerequisites are executable. Runtime/E2E tests without their required family-specific adapter/evidence boundary were not falsely promoted to PASS.
 
-### R7-03 — Conformance Test Contract: PASS
-The canonical TypeScript conformance contracts define:
-- result states;
-- test definitions;
-- test results;
-- execution/evidence/validation references.
+### R8-03 / R8-04 — Contract and Interface Conformance: PASS
 
-The result-state vocabulary is aligned with the existing baseline:
-PASS, FAIL, BLOCKED, PARTIAL, REQUIRES_REVIEW, INVALIDATED, SUPERSEDED.
+The executable R8 runner verified the canonical contract structures.
 
-### R7-04 — Harness Architecture: PASS
-The implemented boundary is:
+| Test | Result | Evidence |
+|---|---|---|
+| AOS-CONTRACT-001 | PASS | CapabilityContract + ImplementationProfile source |
+| AOS-INTERFACE-001 | PASS | InterfaceContract source |
 
-`Requirement → Test Definition → Preconditions → Input → Execution → Observation → Evidence → Validation → Decision`
+The verification is structural contract conformance only; it is not a provider runtime acceptance result.
 
-The harness is explicitly not an AOS Agent and does not authorize provider activation.
+### R8-05 through R8-17 — Runtime/E2E Families
 
-### R7-05 — Executable Harness Implementation: PASS
-Canonical repository now contains:
-- `src/conformance/conformance-test.ts`
-- `src/conformance/conformance-manifest.ts`
-- `src/conformance/harness.ts`
-- `scripts/validate-conformance-harness.mjs`
-- `.github/workflows/conformance-harness.yml`
-- `docs/implementation/conformance/CONFORMANCE-HARNESS-SPEC-v0.1.md`
+The following ten tests are explicitly BLOCKED:
 
-Package build now invokes the harness validator before the Next.js build.
+- AOS-GOVERNANCE-001
+- AOS-STATE-001
+- AOS-EVIDENCE-001
+- AOS-FAILURE-001
+- AOS-RECOVERY-001
+- AOS-IDEMPOTENCY-001
+- AOS-SUBSTITUTION-001
+- AOS-SECURITY-001
+- AOS-OBSERVABILITY-001
+- AOS-GOLDEN-PATH-001
 
-### R7-06 — Harness Self-Validation: PASS
-The production Vercel build for commit `7d90b73e87a69ff0845acf559c84dbe56484050a` executed the validator successfully.
+Reason: the current implementation has a basic provider runtime probe, but does not yet provide the family-specific runtime/E2E conformance adapters and evidence boundaries required to execute these tests honestly.
 
-Direct build evidence reported:
-- harness ID: `AOS-CONFORMANCE-HARNESS-v0.1`;
-- status: `PASS`;
-- checked test families: 12;
-- all required families present;
-- required definition fields present;
-- result semantics present;
-- no-false-PASS guard present;
-- provider-neutrality guard present.
+No inference was made from the existing runtime probe.
 
-The same deployment subsequently completed TypeScript compilation and the production build successfully.
+### R8 Execution Result
 
-### R7-07 — Harness Evidence Record: PASS
-The self-validation result is directly correlated to the canonical repository commit and Vercel production build.
+R8-CONFORMANCE-EXECUTION-001
 
-Important boundary:
-- This proves the harness is executable and self-validating.
-- It does not prove that the 12 AOS conformance tests themselves have passed.
+PASS = 2
+BLOCKED = 10
+FAIL = 0
 
-### R7-08 — GAP-R6-01 Decision Gate: PASS
-**Decision: R7 PASS — EXECUTABLE CONFORMANCE HARNESS ESTABLISHED AND SELF-VALIDATED.**
+The executable runner was executed as part of the production build for commit:
 
-Therefore:
-- GAP-R6-01: CLOSED / PASS.
-- R6 blocker: REMEDIATED.
-- Conformance execution is now structurally authorized to enter its own governed execution stage.
-- Golden Path acceptance remains unauthorized.
+46eefb74a0b4e4d999460108a6ceb9de76b510b3
 
-## R7 Evidence Classification
+Production deployment:
+
+dpl_4RYSemUmgkTShpSGBYEwu8BKmqu4
+
+Deployment state: READY.
+
+Build evidence reported the exact R8 result counts and then completed TypeScript compilation and the Next.js production build successfully.
+
+### R8 Decision Gate
+
+Decision: PARTIAL / BLOCKED
+
+R8 cannot be promoted to PASS because ten required conformance families remain BLOCKED.
+
+This is an intentional governed stop, not a failure of the harness.
+
+## Evidence Classification
 
 | Evidence | Classification |
 |---|---|
-| 12 test definitions | DIRECT REPOSITORY EVIDENCE |
-| Harness implementation | DIRECT REPOSITORY EVIDENCE |
-| Validator execution | DIRECT BUILD EVIDENCE |
-| Harness self-validation result | DIRECT BUILD EVIDENCE |
-| TypeScript compilation | DIRECT BUILD EVIDENCE |
-| Provider neutrality guard | DIRECT BUILD EVIDENCE |
-| No-false-PASS guard | DIRECT BUILD EVIDENCE |
-| Individual conformance results | NOT EXECUTED |
-| Failure/recovery conformance | NOT EXECUTED |
-| Provider substitution conformance | NOT EXECUTED |
-| Golden Path E2E | NOT EXECUTED |
+| R7 executable harness | DIRECT REPOSITORY + BUILD EVIDENCE |
+| R8 execution runner | DIRECT REPOSITORY + BUILD EVIDENCE |
+| Contract conformance | DIRECT BUILD EVIDENCE / STRUCTURAL |
+| Interface conformance | DIRECT BUILD EVIDENCE / STRUCTURAL |
+| Basic runtime probe | DIRECT PROVIDER EVIDENCE |
+| Governance conformance | BLOCKED |
+| State-transition conformance | BLOCKED |
+| Evidence/provenance conformance | BLOCKED |
+| Failure-state conformance | BLOCKED |
+| Recovery/retry conformance | BLOCKED |
+| Idempotency conformance | BLOCKED |
+| Provider substitution conformance | BLOCKED |
+| Security-boundary conformance | BLOCKED |
+| Observability/traceability conformance | BLOCKED |
+| Golden Path E2E | BLOCKED |
 | Stage 18 acceptance | NOT AUTHORIZED |
 
 ## Gap Resolution
@@ -125,23 +117,30 @@ Therefore:
 - GAP-RD-02 — Fullstack Dev Kit repository initialization: CLOSED / PASS
 - GAP-RD-03 — Concrete implementation workspace: PASS / FORMED
 - GAP-RD-04 — Runtime execution boundary: PASS / BASIC PROVIDER-SIDE EXECUTION EVIDENCE
-- GAP-RD-05 — Conformance execution: BLOCKED / READY FOR GOVERNED EXECUTION
+- GAP-RD-05 — Conformance execution: OPEN / 2 PASS, 10 BLOCKED
 - GAP-RD-06 — Deployment surface binding: PASS / FORMED AND DEPLOYED
-- GAP-RD-07 — Unified evidence chain: OPEN / CONFORMANCE RESULTS PENDING
+- GAP-RD-07 — Unified evidence chain: OPEN / CONFORMANCE EVIDENCE PENDING
 - GAP-R6-01 — Executable conformance harness: CLOSED / PASS
 
 ## Authorization Boundary
 
-R7 PASS authorizes progression from “harness not established” to the next governed conformance execution stage. It does not authorize provider activation, conformance acceptance, Golden Path acceptance, or Stage 18 PASS.
+R8 PARTIAL does not authorize provider activation or Stage 18 acceptance.
 
-Runtime proof remains separate from conformance proof.
+The current state is:
+
+Runtime PASS → Harness PASS → Contract PASS → Interface PASS → Runtime Conformance BLOCKED
+
+The next remediation is therefore not to force R8 PASS. It is to establish the governed runtime conformance adapter/evidence boundary required by the ten blocked families, then re-run the unresolved portion.
 
 ## Next Governed Work
 
-1. Enter the Conformance Execution Gate.
-2. Execute the 12 families in governed prerequisite order.
-3. Record each result independently with evidence and validation references.
-4. Stop and remediate on FAIL/BLOCKED rather than silently skipping.
-5. Execute Golden Path E2E only after prerequisite families satisfy their gates.
-6. Re-evaluate GAP-RD-05 and GAP-RD-07.
-7. Consider Stage 18 only after full conformance acceptance.
+1. Define the runtime conformance adapter contract.
+2. Bind authorization and state-transition observation to the harness.
+3. Establish controlled failure/recovery/idempotency execution boundaries.
+4. Establish evidence/provenance and observability correlation.
+5. Establish a second conforming provider or an explicitly governed substitution test fixture before AOS-SUBSTITUTION-001.
+6. Establish authorized security-boundary test fixtures.
+7. Re-run blocked families.
+8. Only then evaluate Golden Path E2E.
+9. Re-evaluate GAP-RD-05 and GAP-RD-07.
+10. Keep Stage 18 blocked until full acceptance.
