@@ -21,9 +21,10 @@ Stage 18 Runtime Execution & Conformance: BLOCKED
 - Production deployment identity is tied to the current canonical Git commit.
 - Next.js dependency was upgraded to a currently patched supported release after Vercel rejected the vulnerable 16.0.0 build.
 - `/api/inngest` exists in the deployed runtime surface.
+- The Inngest serve route now declares `maxDuration = 300` to align the Vercel runtime boundary with the Inngest deployment guidance.
 - Direct unauthenticated access to `/api/inngest` returns HTTP 401 because deployment protection/SSO is active.
 - No runtime logs were observed for the deployment during the validation window.
-- Inngest project integration configuration and environment-key provisioning are present, but actual Inngest synchronization and event execution are not independently evidenced in this run.
+- Inngest project integration configuration and environment-key provisioning are present. Vercel also has an existing Protection Bypass for Automation designated for the Inngest integration; direct unauthenticated requests remain protected by SSO, as expected. Actual Inngest synchronization and event execution are still not independently evidenced in this run.
 
 ## Gap Resolution
 
@@ -46,17 +47,21 @@ The first direct runtime deployment failed during `npm install` because the decl
 ### RD-RUNTIME-03 — Framework detection failure
 The project initially had no framework binding, causing Vercel to expect a static `public` output directory after a successful build. The project framework was explicitly bound to Next.js.
 
+### RD-RUNTIME-05 — Inngest runtime boundary hardening
+The deployed Inngest serve route was aligned with the provider guidance by declaring `maxDuration = 300`. The project already has an automation protection bypass designated for the Inngest integration. A fresh production deployment was triggered from the resulting canonical commit; build completion was observed, while final READY state and downstream Inngest sync remain pending independent verification.
+
 ### RD-RUNTIME-04 — Security gate
 Vercel rejected Next.js 16.0.0 as vulnerable. The runtime dependency was upgraded to Next.js 16.3.8, the current Active LTS release identified during validation. The subsequent production deployment reached READY.
 
 ## Next Governed Work
 
-1. Establish authorized access to the protected `/api/inngest` runtime surface for the Inngest integration.
-2. Prove Inngest synchronization/registration from the deployed endpoint.
-3. Execute the runtime probe `aos/runtime.probe`.
-4. Capture execution, provenance, and trace evidence.
-5. Re-validate GAP-RD-04.
-6. Only after GAP-RD-04 PASS, execute GAP-RD-05 conformance and then Stage 18 Golden Path.
+1. Confirm the fresh deployment reaches READY and is the active production runtime for the canonical commit.
+2. Establish/verify authorized access to the protected `/api/inngest` runtime surface for the Inngest integration.
+3. Prove Inngest synchronization/registration from the deployed endpoint.
+4. Execute the runtime probe `aos/runtime.probe`.
+5. Capture execution, provenance, and trace evidence.
+6. Re-validate GAP-RD-04.
+7. Only after GAP-RD-04 PASS, execute GAP-RD-05 conformance and then Stage 18 Golden Path.
 
 ## Authorization Boundary
 
