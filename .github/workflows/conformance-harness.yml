@@ -1,0 +1,19 @@
+name: AOS Conformance Harness Validation
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  harness-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Validate executable conformance harness
+        run: node scripts/validate-conformance-harness.mjs
+      - name: TypeScript contract check
+        run: npx tsc --noEmit
