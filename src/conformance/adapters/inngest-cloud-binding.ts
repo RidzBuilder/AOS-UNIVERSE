@@ -198,14 +198,16 @@ export const inngestCloudBinding: InngestRuntimeBinding = {
     });
   },
 
-  async injectFailure(executionId, scenario) {
+  async injectFailure(executionId, scenario, sendEvent) {
     const eventId = `aos-failure:${executionId}`;
-    const result = await inngest.send({
+    const event = {
       id: eventId,
       name: "aos/runtime.failure.probe",
       data: { execution_id: executionId, scenario },
-    });
-    const sentEventId = result.ids[0];
+    };
+    const sentEventId = sendEvent
+      ? await sendEvent(event)
+      : (await inngest.send(event)).ids[0];
     if (!sentEventId) throw new Error("inngest_failure_event_send_missing_event_id");
     const run = await findRun(sentEventId);
     return snapshot({
@@ -218,14 +220,16 @@ export const inngestCloudBinding: InngestRuntimeBinding = {
     }, run, `aos-failure-${run.run_id}`);
   },
 
-  async recover(executionId, strategy) {
+  async recover(executionId, strategy, sendEvent) {
     const eventId = `aos-recovery:${executionId}`;
-    const result = await inngest.send({
+    const event = {
       id: eventId,
       name: "aos/runtime.recovery.probe",
       data: { failed_execution_id: executionId, strategy },
-    });
-    const sentEventId = result.ids[0];
+    };
+    const sentEventId = sendEvent
+      ? await sendEvent(event)
+      : (await inngest.send(event)).ids[0];
     if (!sentEventId) throw new Error("inngest_recovery_event_send_missing_event_id");
     const run = await findRun(sentEventId);
     return snapshot({
