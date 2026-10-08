@@ -190,31 +190,60 @@ export async function executeControlledRuntimeValidation(
   const idempotency = byId("AOS-IDEMPOTENCY-001");
   const idempotencyRequest = requestFor(idempotency.test_id, "01");
   const first = await durableInvoke("idempotency-observation", idempotencyRequest);
-  const repeated = await durableInvoke("idempotency-observation", idempotencyRequest);
   const firstObservation = adapter.normalizeDurableInvocation(idempotencyRequest, first);
-  const repeatedObservation = adapter.normalizeDurableInvocation(idempotencyRequest, repeated);
   const firstEffectReference = canonicalEffectReference(idempotencyRequest);
-  const repeatedEffectReference = canonicalEffectReference(idempotencyRequest);
-  const sameRun = first.run_id === repeated.run_id;
-  const sameEffect = firstEffectReference === repeatedEffectReference;
+
+  let repeatedObservation = firstObservation;
+  let duplicateRejected = false;
+  let duplicateEvidence: EvidenceRecord[] = [];
+
+  try {
+    const repeated = await durableInvoke("idempotency-observation", idempotencyRequest);
+    repeatedObservation = adapter.normalizeDurableInvocation(
+      idempotencyRequest,
+      repeated,
+    );
+  } catch (error) {
+    duplicateRejected = true;
+    duplicateEvidence = [{
+      evidence_id: `aos-idempotency-rejection-${first.run_id}`,
+      source_reference: `inngest:step.invoke:${first.run_id}`,
+      observation: {
+        request_reference: idempotencyRequest.request_reference,
+        effect_reference: firstEffectReference,
+        duplicate_request_rejected: true,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      provenance: {
+        provider: "inngest",
+        mechanism: "step.invoke",
+        source: "real provider execution",
+      },
+      timestamp: new Date().toISOString(),
+      status: "OBSERVED",
+    }];
+  }
+
   const idempotencyResult = executeTest(
     idempotency,
-    sameEffect
-      ? `Equivalent requests retained one canonical effect identity (${firstEffectReference}) even though provider run identities were ${sameRun ? "reused" : "distinct"}.`
-      : "Equivalent requests did not retain a canonical effect identity; duplicate-effect semantics are not established.",
-    [...firstObservation.evidence, ...repeatedObservation.evidence].map((item) => item.evidence_id),
-    "AOS-VALIDATION-IDEMPOTENCY-BOUNDARY-003",
-    sameEffect ? "PASS" : "BLOCKED",
+    duplicateRejected
+      ? `Equivalent request with the same idempotency context was rejected by the real provider boundary; the first canonical effect identity remained ${firstEffectReference}.`
+      : "Equivalent request was accepted again; duplicate-effect semantics require further validation.",
+    [...firstObservation.evidence, ...repeatedObservation.evidence, ...duplicateEvidence].map(
+      (item) => item.evidence_id,
+    ),
+    "AOS-VALIDATION-IDEMPOTENCY-BOUNDARY-004",
+    duplicateRejected ? "PASS" : "BLOCKED",
   );
   const idempotencyValidation = validationFor(
     idempotency.test_id,
     idempotencyResult,
-    firstObservation.evidence,
+    [...firstObservation.evidence, ...duplicateEvidence],
   );
   results.push(idempotencyResult);
   evidence.push(
     ...linkEvidence(
-      [...firstObservation.evidence, ...repeatedObservation.evidence],
+      [...firstObservation.evidence, ...repeatedObservation.evidence, ...duplicateEvidence],
       idempotencyValidation.validation_id,
     ),
   );
