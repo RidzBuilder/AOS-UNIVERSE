@@ -79,7 +79,8 @@ export interface InngestRuntimeBinding {
   ): Promise<InngestRuntimeSnapshot>;
 
   repeat(request: RuntimeAdapterRequest): Promise<InngestRuntimeSnapshot>;
-  correlateTrace(executionId: string): Promise<InngestRuntimeSnapshot>;
+  correlateTrace?(executionId: string): Promise<InngestRuntimeSnapshot>;
+  trace_correlation_supported?: boolean;
 }
 
 const BASE_CAPABILITIES: readonly RuntimeAdapterCapability[] = [
@@ -88,7 +89,6 @@ const BASE_CAPABILITIES: readonly RuntimeAdapterCapability[] = [
   "EVIDENCE_CAPTURE",
   "IDEMPOTENCY",
   "SECURITY_BOUNDARY",
-  "TRACE_CORRELATION",
 ];
 
 function normalize(snapshot: InngestRuntimeSnapshot): RuntimeAdapterObservation {
@@ -123,6 +123,9 @@ export class InngestRuntimeAdapter implements RuntimeConformanceAdapter {
     const capabilities = [...BASE_CAPABILITIES];
     if (binding.injectFailure) capabilities.push("FAILURE_INJECTION");
     if (binding.recover) capabilities.push("RECOVERY_RETRY");
+    if (binding.trace_correlation_supported && binding.correlateTrace) {
+      capabilities.push("TRACE_CORRELATION");
+    }
     this.capabilities = capabilities;
   }
 
@@ -171,6 +174,9 @@ export class InngestRuntimeAdapter implements RuntimeConformanceAdapter {
   async correlateTrace(
     executionId: string,
   ): Promise<RuntimeAdapterObservation> {
+    if (!this.binding.correlateTrace) {
+      throw new Error("adapter_capability_unavailable:TRACE_CORRELATION");
+    }
     return normalize(await this.binding.correlateTrace(executionId));
   }
 }
