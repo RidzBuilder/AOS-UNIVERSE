@@ -263,3 +263,14 @@ This gate does not prove:
 Proceed to controlled family-specific runtime validation only where the adapter capability and evidence prerequisites are both satisfied.
 
 Do not execute Golden Path, provider substitution, failure/recovery, or traceability tests until their explicit provider-side mechanics and evidence boundaries are implemented and separately authorized.
+
+
+## Controlled Runtime Re-Validation — 2026-10-08
+
+Durable execution boundary remediation commit: 880b446f9cd55006abef6e2fd67aa76d406083e8. Production deployment dpl_5L5cpgcHzaS1TcSdQeLDQgt6sGnT reached READY and Inngest sync 1564e059-a79c-4726-b048-98e37c1f5515 succeeded. Controlled run 01M4DWVWKZSVM2VF8NYCFHZSQG completed in 3242 ms.
+
+Results: AOS-GOVERNANCE-001 BLOCKED; AOS-STATE-001 BLOCKED; AOS-EVIDENCE-001 PASS (scoped evidence traceability); AOS-IDEMPOTENCY-001 BLOCKED. The durable execution boundary is validated for the controlled path, but full runtime conformance is not established.
+
+Overall decision remains PARTIAL / GOVERNED BLOCK. GAP-RD-05 and GAP-RD-07 remain OPEN. Golden Path, provider activation and Stage 18 remain NOT AUTHORIZED / NOT ACCEPTED.
+
+Next governed work: canonical state-transition binding; authorized unauthorized-execution fixture; canonical duplicate-effect semantics; failure injection; recovery/retry; trace correlation; security fixtures; second-provider substitution; independent re-validation; GAP-RD-05/GAP-RD-07 re-evaluation.
