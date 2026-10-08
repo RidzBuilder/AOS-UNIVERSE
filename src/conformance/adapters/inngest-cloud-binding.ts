@@ -292,7 +292,7 @@ export const inngestCloudBinding: InngestRuntimeBinding = {
     };
     const sentEventId = sendEvent
       ? await sendEvent(event)
-      : await sendEvent(event);
+      : await sendInngestEvent(event);
     if (!sentEventId) throw new Error("inngest_recovery_event_send_missing_event_id");
     const run = await findRun(sentEventId);
     return snapshot({
