@@ -1,4 +1,3 @@
-import { inngest } from "../../inngest/client";
 import type {
   InngestRuntimeBinding,
   InngestRuntimeSnapshot,
@@ -38,6 +37,32 @@ function requireSigningKey(): string {
 function envHeaders(): Record<string, string> {
   const env = process.env.INNGEST_ENV;
   return env ? { "x-inngest-env": env } : {};
+}
+
+function requireEventKey(): string {
+  const key = process.env.INNGEST_EVENT_KEY;
+  if (!key) throw new Error("missing_provider_credential:INNGEST_EVENT_KEY");
+  return key;
+}
+
+type EventSendResponse = { ids?: string[] };
+
+async function sendEvent(event: { id: string; name: string; data: Record<string, unknown> }): Promise<string> {
+  const response = await fetch(`https://inn.gs/e/${encodeURIComponent(requireEventKey())}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-inngest-env": process.env.INNGEST_ENV ?? "production",
+    },
+    body: JSON.stringify(event),
+  });
+  if (!response.ok) {
+    throw new Error(`inngest_event_api_error:${response.status}:${await response.text()}`);
+  }
+  const result = (await response.json()) as EventSendResponse;
+  const eventId = result.ids?.[0];
+  if (!eventId) throw new Error("inngest_event_api_missing_event_id");
+  return eventId;
 }
 
 async function getJson<T>(path: string): Promise<T> {
@@ -150,16 +175,11 @@ export const inngestCloudBinding: InngestRuntimeBinding = {
   async start(request) {
     const eventId = request.idempotency_key ?? request.execution_id;
 
-    const result = await inngest.send({
+    const sentEventId = await sendEvent({
       id: eventId,
       name: request.workflow_reference,
-      data: request.input,
+      data: request.input as Record<string, unknown>,
     });
-
-    const sentEventId = result.ids[0];
-    if (!sentEventId) {
-      throw new Error("inngest_event_send_missing_event_id");
-    }
 
     const run = await findRun(sentEventId);
     return snapshot(
@@ -195,13 +215,11 @@ export const inngestCloudBinding: InngestRuntimeBinding = {
 
   async dispatchFailure(executionId, scenario) {
     const eventId = `aos-failure:${executionId}`;
-    const result = await inngest.send({
+    const sentEventId = await sendEvent({
       id: eventId,
       name: "aos/runtime.failure.probe",
       data: { execution_id: executionId, scenario },
     });
-    const sentEventId = result.ids[0];
-    if (!sentEventId) throw new Error("inngest_failure_event_send_missing_event_id");
     return {
       dispatch_id: sentEventId,
       execution_id: executionId,
@@ -223,13 +241,11 @@ export const inngestCloudBinding: InngestRuntimeBinding = {
 
   async dispatchRecovery(executionId, strategy) {
     const eventId = `aos-recovery:${executionId}`;
-    const result = await inngest.send({
+    const sentEventId = await sendEvent({
       id: eventId,
       name: "aos/runtime.recovery.probe",
       data: { failed_execution_id: executionId, strategy },
     });
-    const sentEventId = result.ids[0];
-    if (!sentEventId) throw new Error("inngest_recovery_event_send_missing_event_id");
     return {
       dispatch_id: sentEventId,
       execution_id: executionId,
@@ -254,7 +270,7 @@ export const inngestCloudBinding: InngestRuntimeBinding = {
     };
     const sentEventId = sendEvent
       ? await sendEvent(event)
-      : (await inngest.send(event)).ids[0];
+      : await sendEvent(event);
     if (!sentEventId) throw new Error("inngest_failure_event_send_missing_event_id");
     const run = await findRun(sentEventId);
     return snapshot({
@@ -276,7 +292,7 @@ export const inngestCloudBinding: InngestRuntimeBinding = {
     };
     const sentEventId = sendEvent
       ? await sendEvent(event)
-      : (await inngest.send(event)).ids[0];
+      : await sendEvent(event);
     if (!sentEventId) throw new Error("inngest_recovery_event_send_missing_event_id");
     const run = await findRun(sentEventId);
     return snapshot({
