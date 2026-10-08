@@ -7,7 +7,7 @@ export interface ConformanceEvidenceSpine {
   requirement_reference: string;
   capability_reference: string;
   test_reference: string;
-  execution_reference: string;
+  execution_reference?: string;
   observation_reference: string;
   evidence_references: string[];
   validation_reference: string;
