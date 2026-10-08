@@ -192,11 +192,82 @@ export async function executeControlledRuntimeValidation(
   evidence.push(...linkEvidence(evidenceObservation.evidence, evidenceValidation.validation_id));
   validations.push(evidenceValidation);
 
+  const failure = byId("AOS-FAILURE-001");
+  const failureBinding = bindRuntimeAdapter(failure, adapter);
+  if (failureBinding.readiness !== "READY_TO_VALIDATE") {
+    throw new Error("failure_injection_capability_required");
+  }
+
+  const failureRequest = requestFor(failure.test_id, "01", validationContext);
+  const failureObservation = await adapter.injectFailure(
+    failureRequest.execution_id,
+    {
+      mode: "CONTROLLED_NON_RETRIABLE_FAILURE",
+      reason: "AOS failure-state conformance probe",
+    },
+  );
+  const failureEvidence = failureObservation.evidence;
+  const failureExplicit =
+    failureObservation.execution.execution_state.toUpperCase() === "FAILED";
+  const failureResult = executeTest(
+    failure,
+    failureExplicit
+      ? "Controlled failure injection produced an explicit FAILED provider runtime state; the failure was not converted to success."
+      : `Failure injection did not produce the required explicit FAILED state: ${failureObservation.execution.execution_state}.`,
+    failureEvidence.map((item) => item.evidence_id),
+    "AOS-VALIDATION-FAILURE-BOUNDARY-001",
+    failureExplicit ? "PASS" : "FAIL",
+  );
+  const failureValidation = validationFor(failure.test_id, failureResult, failureEvidence);
+  results.push(failureResult);
+  evidence.push(...linkEvidence(failureEvidence, failureValidation.validation_id));
+  validations.push(failureValidation);
+
+  const recovery = byId("AOS-RECOVERY-001");
+  const recoveryBinding = bindRuntimeAdapter(recovery, adapter);
+  if (recoveryBinding.readiness !== "READY_TO_VALIDATE") {
+    throw new Error("recovery_capability_required");
+  }
+
+  const recoveryObservation = await adapter.recover(
+    failureRequest.execution_id,
+    {
+      strategy: "CONTROLLED_CONTINUATION",
+      failed_execution_id: failureObservation.execution.execution_id,
+    },
+  );
+  const recoveryEvidence = recoveryObservation.evidence;
+  const recoveryOutput = recoveryEvidence[0]?.observation;
+  const recoveryObject =
+    recoveryOutput && typeof recoveryOutput === "object"
+      ? (recoveryOutput as { output?: unknown })
+      : undefined;
+  const recoveryValid =
+    recoveryObservation.execution.execution_state.toUpperCase() === "COMPLETED" &&
+    Boolean(recoveryObject);
+  const recoveryResult = executeTest(
+    recovery,
+    recoveryValid
+      ? "Recovery produced a bounded provider runtime completion and evidence linking the recovery operation to the failed execution."
+      : `Recovery did not produce the required bounded completion state: ${recoveryObservation.execution.execution_state}.`,
+    recoveryEvidence.map((item) => item.evidence_id),
+    "AOS-VALIDATION-RECOVERY-BOUNDARY-001",
+    recoveryValid ? "PASS" : "FAIL",
+  );
+  const recoveryValidation = validationFor(
+    recovery.test_id,
+    recoveryResult,
+    recoveryEvidence,
+  );
+  results.push(recoveryResult);
+  evidence.push(...linkEvidence(recoveryEvidence, recoveryValidation.validation_id));
+  validations.push(recoveryValidation);
+
   const idempotency = byId("AOS-IDEMPOTENCY-001");
   const idempotencyEvidence: EvidenceRecord[] = [];
   const idempotencyResult = executeTest(
     idempotency,
-    "Controlled parent self-invocation is not used for duplicate testing because provider duplicate rejection can fail the invoking function boundary. Provider-level event-id idempotency is validated separately through an externally triggered controlled test.",
+    "Controlled parent self-invocation is not used for duplicate testing because provider duplicate rejection can fail the invoking function boundary. Provider-level event-id idempotency remains validated separately through an externally triggered controlled test.",
     [],
     "AOS-VALIDATION-IDEMPOTENCY-BOUNDARY-EXTERNAL-001",
     "BLOCKED",
