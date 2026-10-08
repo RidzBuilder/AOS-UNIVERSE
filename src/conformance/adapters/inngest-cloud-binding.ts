@@ -122,6 +122,7 @@ async function findRun(eventId: string): Promise<InngestRun> {
 }
 
 export const inngestCloudBinding: InngestRuntimeBinding = {
+  trace_correlation_supported: false,
   async authorize(request) {
     if (!request.authorization_reference) {
       throw new Error("authorization_reference_required");
