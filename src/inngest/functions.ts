@@ -49,7 +49,7 @@ export const aosControlledConformanceValidation = inngest.createFunction(
 export const aosFailureProbe = inngest.createFunction(
   {
     id: "aos-failure-probe",
-    retries: { attempts: 1 },
+    retries: 1,
     triggers: [{ event: "aos/runtime.failure.probe" }]
   },
   async ({ event }) => {
@@ -66,7 +66,7 @@ export const aosFailureProbe = inngest.createFunction(
 export const aosRecoveryContinuation = inngest.createFunction(
   {
     id: "aos-recovery-continuation",
-    retries: { attempts: 1 },
+    retries: 1,
     triggers: [{ event: "aos/runtime.recovery.continue" }]
   },
   async ({ event, step, runId }) => {
@@ -87,7 +87,7 @@ export const aosRecoveryContinuation = inngest.createFunction(
 export const aosRecoveryProbe = inngest.createFunction(
   {
     id: "aos-recovery-probe",
-    retries: { attempts: 1 },
+    retries: 1,
     triggers: [{ event: "aos/runtime.recovery.probe" }]
   },
   async ({ event, step, runId }) => {
