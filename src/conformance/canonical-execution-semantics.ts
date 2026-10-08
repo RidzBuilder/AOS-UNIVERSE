@@ -53,10 +53,12 @@ export function controlledUnauthorizedRequest(): RuntimeAdapterRequest {
 export function isUnauthorizedFixture(
   request: RuntimeAdapterRequest,
 ): boolean {
-  return request.input &&
+  return (
     typeof request.input === "object" &&
+    request.input !== null &&
     (request.input as { fixture?: unknown }).fixture ===
-      "UNAUTHORIZED_EXECUTION_ATTEMPT";
+      "UNAUTHORIZED_EXECUTION_ATTEMPT"
+  );
 }
 
 export function canonicalEffectReference(
