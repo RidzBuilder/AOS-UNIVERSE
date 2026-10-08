@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { executeControlledRuntimeValidation } from "../../../conformance/runtime-validation-executor";
-import { InngestRuntimeAdapter } from "../../../conformance/adapters/inngest-runtime-adapter";
-import { inngestCloudBinding } from "../../../conformance/adapters/inngest-cloud-binding";
+import { executeControlledRuntimeValidation } from "../../../../conformance/runtime-validation-executor";
+import { InngestRuntimeAdapter } from "../../../../conformance/adapters/inngest-runtime-adapter";
+import { inngestCloudBinding } from "../../../../conformance/adapters/inngest-cloud-binding";
 
 export const dynamic = "force-dynamic";
 
