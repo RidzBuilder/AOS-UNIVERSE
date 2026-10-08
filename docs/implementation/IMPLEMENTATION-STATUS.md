@@ -2,6 +2,7 @@
 
 ## Current Gate
 
+Failure & Recovery Boundary: PASS / SCOPED
 Canonical State & Authorization Boundary: PASS / SCOPED
 Canonical Repository Binding: PASS
 Repository Baseline Audit: PASS
@@ -10,7 +11,7 @@ Reference Implementation Workspace: FORMED
 Canonical Implementation Schema Baseline: FORMALIZED
 Component Registry Baseline: FORMALIZED
 Provider Registry Baseline: FORMALIZED
-Conformance Test Baseline: DEFINED / RUNTIME ADAPTER + INNGEST BINDING ESTABLISHED / SCOPED CONTROLLED VALIDATION EXECUTED
+Conformance Test Baseline: DEFINED / RUNTIME ADAPTER + INNGEST BINDING ESTABLISHED / SCOPED CONTROLLED VALIDATION EXECUTED / FAILURE & RECOVERY EVIDENCED
 Reference Runtime Deployment: PASS / READY
 R2 — Inngest Synchronization & Registration Evidence: CLOSED / SUPERSEDED
 R3 — Independently Verifiable Inngest Synchronization & Registration Evidence: CLOSED / PASS
@@ -304,3 +305,42 @@ External provider idempotency validation:
 Canonical State & Authorization Boundary therefore passes at the scoped evidence boundary.
 
 This gate does not promote GAP-RD-05 or GAP-RD-07 to CLOSED and does not authorize failure/recovery, security, observability, substitution, Golden Path, or Stage 18.
+
+
+## Failure & Recovery Boundary — 2026-10-08
+
+Gate result: **PASS / SCOPED**.
+
+Production implementation commit: `a3e279947d5852c1382d833df4e7b29b4131335d`.
+
+Production deployment: `dpl_Ec373t6QXgMtrJaMc7Sd43zxjiRj` / READY.
+
+Inngest synchronization: `0b8743de-44a9-4cbf-b421-8102f876b8c3` / success.
+
+Controlled runtime validation run: `01M4E88S9SND8BZ83N256NAD1Q` / COMPLETED / 34.053 s.
+
+Family results:
+- AOS-GOVERNANCE-001: PASS.
+- AOS-STATE-001: PASS.
+- AOS-EVIDENCE-001: PASS.
+- AOS-FAILURE-001: PASS.
+- AOS-RECOVERY-001: PASS.
+- AOS-IDEMPOTENCY-001: BLOCKED in the parent-controlled path; provider event-id duplicate prevention remains separately evidenced from the prior canonical gate.
+
+Failure evidence:
+- failed provider run: `01M4E88W2GVD7P284PNYAF7B8M`
+- evidence: `aos-failure-01M4E88W2GVD7P284PNYAF7B8M`
+- observed provider state: `Failed`
+- controlled failure was produced by `NonRetriableError`; the failure was not converted to success.
+
+Recovery evidence:
+- recovery run: `01M4E89B7SYY7P7YQW4HHKBHNA`
+- continuation run: `01M4E89DGJ8XKQQB2N4NCSKM4B`
+- evidence: `aos-recovery-01M4E89B7SYY7P7YQW4HHKBHNA`
+- observed recovery trace: `RECOVERING → RECOVERED`
+- failed execution correlation: `aos-conformance-aos-failure-001-01`
+
+Decision:
+The Failure-State and Recovery/Retry conformance families are now directly evidenced through a real provider runtime boundary. Recovery is implemented as a bounded continuation from the observed failed execution; no provider-specific retry semantics are promoted into AOS semantics.
+
+This gate does not authorize security-boundary conformance, observability/trace correlation, provider substitution, Golden Path, or Stage 18. GAP-RD-05 and GAP-RD-07 remain OPEN.
