@@ -34,14 +34,18 @@ const byId = (id: string) => {
   return test;
 };
 
-function requestFor(testId: string, suffix: string): RuntimeAdapterRequest {
+function requestFor(
+  testId: string,
+  suffix: string,
+  validationContext: string,
+): RuntimeAdapterRequest {
   return {
     execution_id: `aos-conformance-${testId.toLowerCase().replaceAll("_", "-")}-${suffix}`,
     request_reference: `conformance-request:${testId}:${suffix}`,
     authorization_reference: `conformance-authorization:${testId}:${suffix}`,
     workflow_reference: "aos/runtime.probe",
     provider_reference: "inngest",
-    idempotency_key: `aos-conformance:${testId}:${suffix}`,
+    idempotency_key: `aos-conformance:${testId}:${suffix}:${validationContext}`,
     input: {
       conformance_test_id: testId,
       probe_id: `CONFORMANCE-${testId}-${suffix}`,
@@ -91,6 +95,7 @@ export async function executeControlledRuntimeValidation(
   const results: ConformanceTestResult[] = [];
   const evidence: EvidenceRecord[] = [];
   const validations: ValidationResult[] = [];
+  const validationContext = `controlled-${Date.now().toString(36)}`;
 
   const governance = byId("AOS-GOVERNANCE-001");
   const governanceBinding = bindRuntimeAdapter(governance, adapter);
@@ -137,7 +142,7 @@ export async function executeControlledRuntimeValidation(
   }
 
   const state = byId("AOS-STATE-001");
-  const stateRequest = requestFor(state.test_id, "01");
+  const stateRequest = requestFor(state.test_id, "01", validationContext);
   const stateInvocation = await durableInvoke("state-observation", stateRequest);
   const stateObservation = adapter.normalizeDurableInvocation(stateRequest, stateInvocation);
   const stateOutput =
@@ -164,7 +169,7 @@ export async function executeControlledRuntimeValidation(
   validations.push(stateValidation);
 
   const evidenceTest = byId("AOS-EVIDENCE-001");
-  const evidenceRequest = requestFor(evidenceTest.test_id, "01");
+  const evidenceRequest = requestFor(evidenceTest.test_id, "01", validationContext);
   const evidenceInvocation = await durableInvoke("evidence-observation", evidenceRequest);
   const evidenceObservation = adapter.normalizeDurableInvocation(evidenceRequest, evidenceInvocation);
   const evidenceComplete = evidenceObservation.evidence.every(
@@ -188,7 +193,7 @@ export async function executeControlledRuntimeValidation(
   validations.push(evidenceValidation);
 
   const idempotency = byId("AOS-IDEMPOTENCY-001");
-  const idempotencyRequest = requestFor(idempotency.test_id, "01");
+  const idempotencyRequest = requestFor(idempotency.test_id, "01", validationContext);
   const firstObservation = await adapter.start(idempotencyRequest);
   const firstEffectReference = canonicalEffectReference(idempotencyRequest);
 
