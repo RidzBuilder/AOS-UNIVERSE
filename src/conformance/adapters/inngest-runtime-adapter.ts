@@ -68,6 +68,9 @@ export interface InngestRuntimeBinding {
   authorize(request: RuntimeAdapterRequest): Promise<InngestRuntimeSnapshot>;
   start(request: RuntimeAdapterRequest): Promise<InngestRuntimeSnapshot>;
   observe(executionId: string): Promise<InngestRuntimeSnapshot>;
+  dispatchFailure?(executionId: string, scenario: unknown): Promise<RuntimeDispatchHandle>;
+  observeDispatch?(handle: RuntimeDispatchHandle): Promise<InngestRuntimeSnapshot>;
+  dispatchRecovery?(executionId: string, strategy: unknown): Promise<RuntimeDispatchHandle>;
 
   injectFailure?(
     executionId: string,
