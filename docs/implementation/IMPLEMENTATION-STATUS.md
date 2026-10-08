@@ -101,11 +101,11 @@ This is an intentional governed stop, not a failure of the harness.
 | Contract conformance | DIRECT BUILD EVIDENCE / STRUCTURAL |
 | Interface conformance | DIRECT BUILD EVIDENCE / STRUCTURAL |
 | Basic runtime probe | DIRECT PROVIDER EVIDENCE |
-| Governance conformance | BLOCKED |
-| State-transition conformance | BLOCKED |
-| Evidence/provenance conformance | BLOCKED |
-| Failure-state conformance | BLOCKED |
-| Recovery/retry conformance | BLOCKED |
+| Governance conformance | PASS / SCOPED |
+| State-transition conformance | PASS / SCOPED |
+| Evidence/provenance conformance | PASS / SCOPED |
+| Failure-state conformance | PASS / SCOPED |
+| Recovery/retry conformance | PASS / SCOPED |
 | Idempotency conformance | BLOCKED |
 | Provider substitution conformance | BLOCKED |
 | Security-boundary conformance | BLOCKED |
@@ -138,7 +138,7 @@ The adapter implementation is now split into three layers:
 2. `src/conformance/adapters/inngest-runtime-adapter.ts` — provider-specific normalization boundary.
 3. `src/conformance/adapters/inngest-cloud-binding.ts` — Inngest Cloud mechanics for authorization precondition checks, event submission, run observation, and repeat/idempotency probing.
 
-The binding deliberately does not claim failure injection, recovery/retry control, or trace correlation. Those capabilities remain unavailable until a real provider-side mechanism and evidence path are implemented.
+The binding now has real provider-side mechanics for controlled failure injection and bounded recovery/continuation, and both are directly evidenced by the Failure & Recovery Boundary validation. Trace correlation remains unavailable.
 
 Runtime family mapping is represented in `src/conformance/runtime-adapter-binding.ts`. Provider substitution remains blocked because a second conforming provider is required. Golden Path remains separately authorization-gated.
 
