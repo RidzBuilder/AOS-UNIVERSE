@@ -83,7 +83,6 @@ function snapshot(
         run.output === undefined ? undefined : `run-output:${run.run_id}`,
       artifact_references: [],
       failure_recovery_references: [],
-      evidence_references: [evidenceId],
     },
     evidence: [
       {
