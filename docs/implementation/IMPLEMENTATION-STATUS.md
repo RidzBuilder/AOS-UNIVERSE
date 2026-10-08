@@ -2,6 +2,7 @@
 
 ## Current Gate
 
+Canonical State & Authorization Boundary: PASS / SCOPED
 Canonical Repository Binding: PASS
 Repository Baseline Audit: PASS
 Fullstack Dev Kit Repository Initialization: PASS / BASELINE ESTABLISHED
@@ -9,7 +10,7 @@ Reference Implementation Workspace: FORMED
 Canonical Implementation Schema Baseline: FORMALIZED
 Component Registry Baseline: FORMALIZED
 Provider Registry Baseline: FORMALIZED
-Conformance Test Baseline: DEFINED / RUNTIME ADAPTER + INNGEST BINDING ESTABLISHED / EXECUTION NOT YET AUTHORIZED
+Conformance Test Baseline: DEFINED / RUNTIME ADAPTER + INNGEST BINDING ESTABLISHED / SCOPED CONTROLLED VALIDATION EXECUTED
 Reference Runtime Deployment: PASS / READY
 R2 — Inngest Synchronization & Registration Evidence: CLOSED / SUPERSEDED
 R3 — Independently Verifiable Inngest Synchronization & Registration Evidence: CLOSED / PASS
@@ -20,7 +21,7 @@ R7 — Executable Conformance Harness Design & Establishment Gate: PASS / SELF-V
 R8 — Conformance Execution Gate: PRECONDITION RECORD / NOT A GOLDEN PATH FAILURE
 GAP-R6-01 — Executable conformance harness: CLOSED / PASS
 GAP-RD-04 — Runtime execution boundary: CLOSED / PASS / AUTHORIZED BASIC RUNTIME EXECUTION
-GAP-RD-05 — Conformance execution: NOT AUTHORIZED / NOT EXECUTED
+GAP-RD-05 — Conformance execution: OPEN / SCOPED FAMILY VALIDATION EVIDENCED
 GAP-RD-07 — Unified evidence chain: OPEN / CONFORMANCE ADAPTER BOUNDARY ESTABLISHED / CONFORMANCE NOT YET AUTHORIZED
 Stage 18 Runtime Execution & Conformance: NOT ACCEPTED / GOLDEN PATH NOT AUTHORIZED
 
