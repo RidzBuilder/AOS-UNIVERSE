@@ -3,7 +3,10 @@ import type {
   InngestRuntimeBinding,
   InngestRuntimeSnapshot,
 } from "./inngest-runtime-adapter";
-import type { RuntimeAdapterRequest } from "../runtime-adapter";
+import type {
+  RuntimeAdapterRequest,
+  RuntimeDispatchHandle,
+} from "../runtime-adapter";
 
 const API_BASE = "https://api.inngest.com";
 
@@ -188,6 +191,50 @@ export const inngestCloudBinding: InngestRuntimeBinding = {
       run,
       `aos-runtime-observation-${run.run_id}`,
     );
+  },
+
+  async dispatchFailure(executionId, scenario) {
+    const eventId = `aos-failure:${executionId}`;
+    const result = await inngest.send({
+      id: eventId,
+      name: "aos/runtime.failure.probe",
+      data: { execution_id: executionId, scenario },
+    });
+    const sentEventId = result.ids[0];
+    if (!sentEventId) throw new Error("inngest_failure_event_send_missing_event_id");
+    return {
+      dispatch_id: sentEventId,
+      execution_id: executionId,
+      phase: "DISPATCHED" as const,
+    };
+  },
+
+  async observeDispatch(handle) {
+    const run = await findRun(handle.dispatch_id);
+    return snapshot({
+      execution_id: handle.execution_id,
+      request_reference: `failure-injection:${handle.execution_id}`,
+      authorization_reference: `controlled-failure:${handle.execution_id}`,
+      workflow_reference: "aos/runtime.failure.probe",
+      provider_reference: "inngest",
+      input: undefined,
+    }, run, `aos-failure-${run.run_id}`);
+  },
+
+  async dispatchRecovery(executionId, strategy) {
+    const eventId = `aos-recovery:${executionId}`;
+    const result = await inngest.send({
+      id: eventId,
+      name: "aos/runtime.recovery.probe",
+      data: { failed_execution_id: executionId, strategy },
+    });
+    const sentEventId = result.ids[0];
+    if (!sentEventId) throw new Error("inngest_recovery_event_send_missing_event_id");
+    return {
+      dispatch_id: sentEventId,
+      execution_id: executionId,
+      phase: "DISPATCHED" as const,
+    };
   },
 
   async repeat(request) {
