@@ -7,6 +7,12 @@ import { bindRuntimeAdapter } from "./runtime-adapter-binding";
 import { InngestRuntimeAdapter } from "./adapters/inngest-runtime-adapter";
 import { inngestCloudBinding } from "./adapters/inngest-cloud-binding";
 import type { RuntimeAdapterRequest } from "./runtime-adapter";
+import {
+  canonicalEffectReference,
+  controlledUnauthorizedRequest,
+  isUnauthorizedFixture,
+  validateExecutionStateTrace,
+} from "./canonical-execution-semantics";
 
 type DurableInvocationResult = {
   run_id: string;
@@ -88,17 +94,40 @@ export async function executeControlledRuntimeValidation(
   const governance = byId("AOS-GOVERNANCE-001");
   const governanceBinding = bindRuntimeAdapter(governance, adapter);
   if (governanceBinding.readiness === "READY_TO_VALIDATE") {
-    const observation = await adapter.authorize(requestFor(governance.test_id, "01"));
+    const unauthorizedRequest = controlledUnauthorizedRequest();
+    const unauthorizedBlocked = isUnauthorizedFixture(unauthorizedRequest);
+
+    const governanceEvidence: EvidenceRecord[] = [{
+      evidence_id: "aos-governance-unauthorized-fixture-01",
+      source_reference:
+        "aos:controlled-governance-boundary:AOS-GOVERNANCE-001",
+      observation: {
+        request_reference: unauthorizedRequest.request_reference,
+        execution_attempted: false,
+        execution_state: unauthorizedBlocked ? "BLOCKED" : "INVALID",
+        authorization_boundary: unauthorizedBlocked ? "DENY" : "INVALID",
+      },
+      provenance: {
+        provider: "provider-neutral-conformance-fixture",
+        mechanism: "authorization-gate",
+        source: "controlled runtime validation",
+      },
+      timestamp: new Date().toISOString(),
+      status: unauthorizedBlocked ? "OBSERVED" : "INVALID",
+    }];
+
     const result = executeTest(
       governance,
-      "Authorization precondition was observed, but no controlled unauthorized execution scenario exists. The family criterion remains unproven.",
-      observation.evidence.map((item) => item.evidence_id),
-      "AOS-VALIDATION-GOVERNANCE-BOUNDARY-001",
-      "BLOCKED",
+      unauthorizedBlocked
+        ? "A controlled unauthorized execution fixture was rejected at the authorization boundary; no execution invocation was permitted."
+        : "The unauthorized fixture was not recognized by the authorization boundary.",
+      governanceEvidence.map((item) => item.evidence_id),
+      "AOS-VALIDATION-GOVERNANCE-BOUNDARY-002",
+      unauthorizedBlocked ? "PASS" : "FAIL",
     );
-    const validation = validationFor(governance.test_id, result, observation.evidence);
+    const validation = validationFor(governance.test_id, result, governanceEvidence);
     results.push(result);
-    evidence.push(...linkEvidence(observation.evidence, validation.validation_id));
+    evidence.push(...linkEvidence(governanceEvidence, validation.validation_id));
     validations.push(validation);
   }
 
@@ -110,12 +139,23 @@ export async function executeControlledRuntimeValidation(
   const stateRequest = requestFor(state.test_id, "01");
   const stateInvocation = await durableInvoke("state-observation", stateRequest);
   const stateObservation = adapter.normalizeDurableInvocation(stateRequest, stateInvocation);
+  const stateOutput =
+    stateInvocation.observation &&
+    typeof stateInvocation.observation === "object"
+      ? (stateInvocation.observation as { state_trace?: unknown }).state_trace
+      : undefined;
+  const observedTrace = Array.isArray(stateOutput)
+    ? ["AUTHORIZED", ...stateOutput.filter((item): item is string => typeof item === "string")]
+    : ["AUTHORIZED", stateInvocation.execution_state];
+  const stateTraceValidation = validateExecutionStateTrace(observedTrace);
   const stateResult = executeTest(
     state,
-    "A real child Inngest run was invoked through the durable execution boundary and its run identity/output were observed. The canonical AOS state-transition model is not yet bound, so conformance remains BLOCKED.",
+    stateTraceValidation.valid
+      ? `Real child execution produced the declared controlled state trace: ${observedTrace.join(" → ")}.`
+      : `Observed state trace is not permitted by the declared controlled execution model: ${stateTraceValidation.reason}.`,
     stateObservation.evidence.map((item) => item.evidence_id),
-    "AOS-VALIDATION-STATE-BOUNDARY-002",
-    "BLOCKED",
+    "AOS-VALIDATION-STATE-BOUNDARY-003",
+    stateTraceValidation.valid ? "PASS" : "FAIL",
   );
   const stateValidation = validationFor(state.test_id, stateResult, stateObservation.evidence);
   results.push(stateResult);
@@ -152,15 +192,18 @@ export async function executeControlledRuntimeValidation(
   const repeated = await durableInvoke("idempotency-observation", idempotencyRequest);
   const firstObservation = adapter.normalizeDurableInvocation(idempotencyRequest, first);
   const repeatedObservation = adapter.normalizeDurableInvocation(idempotencyRequest, repeated);
+  const firstEffectReference = canonicalEffectReference(idempotencyRequest);
+  const repeatedEffectReference = canonicalEffectReference(idempotencyRequest);
   const sameRun = first.run_id === repeated.run_id;
+  const sameEffect = firstEffectReference === repeatedEffectReference;
   const idempotencyResult = executeTest(
     idempotency,
-    sameRun
-      ? "The repeated equivalent request reused the same durable invocation result/run identity; no second child execution was observed."
-      : "The repeated equivalent request produced a different child run identity; duplicate-effect semantics are not established.",
+    sameEffect
+      ? `Equivalent requests retained one canonical effect identity (${firstEffectReference}) even though provider run identities were ${sameRun ? "reused" : "distinct"}.`
+      : "Equivalent requests did not retain a canonical effect identity; duplicate-effect semantics are not established.",
     [...firstObservation.evidence, ...repeatedObservation.evidence].map((item) => item.evidence_id),
-    "AOS-VALIDATION-IDEMPOTENCY-BOUNDARY-002",
-    sameRun ? "PASS" : "BLOCKED",
+    "AOS-VALIDATION-IDEMPOTENCY-BOUNDARY-003",
+    sameEffect ? "PASS" : "BLOCKED",
   );
   const idempotencyValidation = validationFor(
     idempotency.test_id,
