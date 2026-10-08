@@ -71,11 +71,13 @@ export interface InngestRuntimeBinding {
   injectFailure?(
     executionId: string,
     scenario: unknown,
+    sendEvent?: (event: { id: string; name: string; data: Record<string, unknown> }) => Promise<string>,
   ): Promise<InngestRuntimeSnapshot>;
 
   recover?(
     executionId: string,
     strategy: unknown,
+    sendEvent?: (event: { id: string; name: string; data: Record<string, unknown> }) => Promise<string>,
   ): Promise<InngestRuntimeSnapshot>;
 
   repeat(request: RuntimeAdapterRequest): Promise<InngestRuntimeSnapshot>;
@@ -148,21 +150,23 @@ export class InngestRuntimeAdapter implements RuntimeConformanceAdapter {
   async injectFailure(
     executionId: string,
     scenario: unknown,
+    sendEvent?: (event: { id: string; name: string; data: Record<string, unknown> }) => Promise<string>,
   ): Promise<RuntimeAdapterObservation> {
     if (!this.binding.injectFailure) {
       throw new Error("adapter_capability_unavailable:FAILURE_INJECTION");
     }
-    return normalize(await this.binding.injectFailure(executionId, scenario));
+    return normalize(await this.binding.injectFailure(executionId, scenario, sendEvent));
   }
 
   async recover(
     executionId: string,
     strategy: unknown,
+    sendEvent?: (event: { id: string; name: string; data: Record<string, unknown> }) => Promise<string>,
   ): Promise<RuntimeAdapterObservation> {
     if (!this.binding.recover) {
       throw new Error("adapter_capability_unavailable:RECOVERY_RETRY");
     }
-    return normalize(await this.binding.recover(executionId, strategy));
+    return normalize(await this.binding.recover(executionId, strategy, sendEvent));
   }
 
   async repeat(
