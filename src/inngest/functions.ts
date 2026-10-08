@@ -3,7 +3,7 @@ import { executeControlledRuntimeValidation } from "../conformance/runtime-valid
 
 export const aosRuntimeProbe = inngest.createFunction(
   { id: "aos-runtime-probe", triggers: [{ event: "aos/runtime.probe" }] },
-  async ({ event, step }) => {
+  async ({ event, step, runId, attempt }) => {
     const observation = await step.run("runtime-observation", async () => ({
       execution_state: "RUNNING",
       event_name: "aos/runtime.probe",
@@ -11,6 +11,8 @@ export const aosRuntimeProbe = inngest.createFunction(
     }));
 
     return {
+      run_id: runId,
+      attempt,
       execution_state: "COMPLETED",
       observation
     };
@@ -24,7 +26,12 @@ export const aosControlledConformanceValidation = inngest.createFunction(
   },
   async ({ step }) => {
     return step.run("controlled-runtime-validation", async () => {
-      return executeControlledRuntimeValidation();
+      return executeControlledRuntimeValidation(async (id, request) => {
+        return step.invoke(id, {
+          function: aosRuntimeProbe,
+          data: request.input
+        });
+      });
     });
   }
 );
