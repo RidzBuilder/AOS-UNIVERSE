@@ -6,6 +6,7 @@ import type {
   RuntimeAdapterObservation,
   RuntimeAdapterRequest,
   RuntimeConformanceAdapter,
+  RuntimeDispatchHandle,
 } from "../runtime-adapter";
 
 /**
@@ -145,6 +146,35 @@ export class InngestRuntimeAdapter implements RuntimeConformanceAdapter {
 
   async observe(executionId: string): Promise<RuntimeAdapterObservation> {
     return normalize(await this.binding.observe(executionId));
+  }
+
+  async dispatchFailure(
+    executionId: string,
+    scenario: unknown,
+  ): Promise<RuntimeDispatchHandle> {
+    if (!this.binding.dispatchFailure) {
+      throw new Error("adapter_capability_unavailable:SPLIT_PHASE_FAILURE_DISPATCH");
+    }
+    return this.binding.dispatchFailure(executionId, scenario);
+  }
+
+  async observeDispatch(
+    handle: RuntimeDispatchHandle,
+  ): Promise<RuntimeAdapterObservation> {
+    if (!this.binding.observeDispatch) {
+      throw new Error("adapter_capability_unavailable:SPLIT_PHASE_OBSERVATION");
+    }
+    return normalize(await this.binding.observeDispatch(handle));
+  }
+
+  async dispatchRecovery(
+    executionId: string,
+    strategy: unknown,
+  ): Promise<RuntimeDispatchHandle> {
+    if (!this.binding.dispatchRecovery) {
+      throw new Error("adapter_capability_unavailable:SPLIT_PHASE_RECOVERY_DISPATCH");
+    }
+    return this.binding.dispatchRecovery(executionId, strategy);
   }
 
   async injectFailure(
