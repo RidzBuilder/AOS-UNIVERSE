@@ -9,7 +9,7 @@ Reference Implementation Workspace: FORMED
 Canonical Implementation Schema Baseline: FORMALIZED
 Component Registry Baseline: FORMALIZED
 Provider Registry Baseline: FORMALIZED
-Conformance Test Baseline: DEFINED / RUNTIME ADAPTER CONTRACT ESTABLISHED / EXECUTION NOT YET AUTHORIZED
+Conformance Test Baseline: DEFINED / RUNTIME ADAPTER + INNGEST BINDING ESTABLISHED / EXECUTION NOT YET AUTHORIZED
 Reference Runtime Deployment: PASS / READY
 R2 — Inngest Synchronization & Registration Evidence: CLOSED / SUPERSEDED
 R3 — Independently Verifiable Inngest Synchronization & Registration Evidence: CLOSED / PASS
@@ -127,6 +127,18 @@ This is an intentional governed stop, not a failure of the harness.
 PASS. The provider-neutral RuntimeConformanceAdapter contract is formally represented in `src/conformance/runtime-adapter.ts` and documented in `docs/implementation/conformance/RUNTIME-CONFORMANCE-ADAPTER-CONTRACT-v0.1.md`.
 
 This gate proves only that the implementation boundary is formally represented and provider-neutral. It does not prove an adapter implementation, runtime conformance, provider conformance, provider activation, Golden Path execution, or Stage 18 acceptance.
+
+## Runtime Adapter Implementation Boundary
+
+The adapter implementation is now split into three layers:
+
+1. `src/conformance/runtime-adapter.ts` — provider-neutral contract.
+2. `src/conformance/adapters/inngest-runtime-adapter.ts` — provider-specific normalization boundary.
+3. `src/conformance/adapters/inngest-cloud-binding.ts` — Inngest Cloud mechanics for authorization precondition checks, event submission, run observation, and repeat/idempotency probing.
+
+The binding deliberately does not claim failure injection, recovery/retry control, or trace correlation. Those capabilities remain unavailable until a real provider-side mechanism and evidence path are implemented.
+
+Runtime family mapping is represented in `src/conformance/runtime-adapter-binding.ts`. Provider substitution remains blocked because a second conforming provider is required. Golden Path remains separately authorization-gated.
 
 ## Authorization Boundary
 
