@@ -106,14 +106,17 @@ function snapshot(
 }
 
 async function findRun(eventId: string): Promise<InngestRun> {
-  const deadline = Date.now() + 15_000;
+  const deadline = Date.now() + 20_000;
 
   while (Date.now() < deadline) {
     const response = await getJson<InngestRunsResponse>(
       `/v1/events/${encodeURIComponent(eventId)}/runs`,
     );
     const run = response.data?.[0];
-    if (run) return run;
+    if (run) {
+      const terminal = new Set(["COMPLETED", "FAILED", "CANCELLED", "SKIPPED"]);
+      if (terminal.has(run.status.toUpperCase())) return run;
+    }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
@@ -195,6 +198,45 @@ export const inngestCloudBinding: InngestRuntimeBinding = {
     });
   },
 
+  async injectFailure(executionId, scenario) {
+    const eventId = `aos-failure:${executionId}`;
+    const result = await inngest.send({
+      id: eventId,
+      name: "aos/runtime.failure.probe",
+      data: { execution_id: executionId, scenario },
+    });
+    const sentEventId = result.ids[0];
+    if (!sentEventId) throw new Error("inngest_failure_event_send_missing_event_id");
+    const run = await findRun(sentEventId);
+    return snapshot({
+      execution_id: executionId,
+      request_reference: `failure-injection:${executionId}`,
+      authorization_reference: `controlled-failure:${executionId}`,
+      workflow_reference: "aos/runtime.failure.probe",
+      provider_reference: "inngest",
+      input: scenario,
+    }, run, `aos-failure-${run.run_id}`);
+  },
+
+  async recover(executionId, strategy) {
+    const eventId = `aos-recovery:${executionId}`;
+    const result = await inngest.send({
+      id: eventId,
+      name: "aos/runtime.recovery.probe",
+      data: { failed_execution_id: executionId, strategy },
+    });
+    const sentEventId = result.ids[0];
+    if (!sentEventId) throw new Error("inngest_recovery_event_send_missing_event_id");
+    const run = await findRun(sentEventId);
+    return snapshot({
+      execution_id: executionId,
+      request_reference: `recovery:${executionId}`,
+      authorization_reference: `controlled-recovery:${executionId}`,
+      workflow_reference: "aos/runtime.recovery.probe",
+      provider_reference: "inngest",
+      input: strategy,
+    }, run, `aos-recovery-${run.run_id}`);
+  },
   async correlateTrace() {
     throw new Error(
       "trace_correlation_not_implemented_in_current_provider_binding",
