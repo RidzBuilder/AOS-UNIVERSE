@@ -1,5 +1,6 @@
 import { CONFORMANCE_TESTS } from "./conformance-manifest";
-import { executeTest, type ConformanceTestResult } from "./harness";
+import { executeTest } from "./harness";
+import type { ConformanceTestResult } from "./conformance-test";
 import { bindRuntimeAdapter } from "./runtime-adapter-binding";
 import { InngestRuntimeAdapter } from "./adapters/inngest-runtime-adapter";
 import { inngestCloudBinding } from "./adapters/inngest-cloud-binding";
