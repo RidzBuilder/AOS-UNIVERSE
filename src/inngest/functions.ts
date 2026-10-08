@@ -2,7 +2,11 @@ import { inngest } from "./client";
 import { executeControlledRuntimeValidation } from "../conformance/runtime-validation-executor";
 
 export const aosRuntimeProbe = inngest.createFunction(
-  { id: "aos-runtime-probe", triggers: [{ event: "aos/runtime.probe" }] },
+  {
+    id: "aos-runtime-probe",
+    idempotency: "event.data.idempotency_key",
+    triggers: [{ event: "aos/runtime.probe" }]
+  },
   async ({ event, step, runId, attempt }) => {
     const observation = await step.run("runtime-observation", async () => ({
       execution_state: "RUNNING",
