@@ -58,6 +58,38 @@ export const aosControlledConformanceValidation = inngest.createFunction(
   }
 );
 
+export const aosControlledConformanceDispatch = inngest.createFunction(
+  { id: "aos-controlled-conformance-dispatch", retries: 0, triggers: [{ event: "aos/conformance.dispatch.phase" }] },
+  async ({ event, step, runId }) => {
+    const executionId = typeof event.data?.execution_id === "string" ? event.data.execution_id : runId;
+    const failureEventId = `aos-failure:${executionId}`;
+    const failureDispatch = await step.sendEvent("dispatch-failure-event", {
+      id: failureEventId,
+      name: "aos/runtime.failure.probe",
+      data: { execution_id: executionId, scenario: { mode: "CONTROLLED_NON_RETRIABLE_FAILURE", reason: "AOS split-phase failure conformance probe" } },
+    });
+    return { phase: "DISPATCH", run_id: runId, execution_id: executionId, failure_event_id: failureDispatch.ids[0] ?? failureEventId, dispatch_state: "DISPATCHED" };
+  },
+);
+
+export const aosControlledConformanceObserver = inngest.createFunction(
+  { id: "aos-controlled-conformance-observer", retries: 0, triggers: [{ event: "aos/conformance.observe.phase" }] },
+  async ({ event, step, runId }) => {
+    const eventId = typeof event.data?.failure_event_id === "string" ? event.data.failure_event_id : undefined;
+    if (!eventId) throw new Error("failure_event_id_required");
+    const observation = await step.run("observe-provider-run", async () => {
+      const response = await fetch("https://api.inngest.com/v1/events/" + encodeURIComponent(eventId) + "/runs", {
+        headers: { Authorization: "Bearer " + (process.env.INNGEST_SIGNING_KEY ?? "") },
+      });
+      if (!response.ok) throw new Error("observer_api_error:" + response.status);
+      const body = (await response.json()) as { data?: Array<{ id?: string; status?: string; function?: { id?: string; name?: string }; trigger?: { eventIds?: string[]; eventName?: string } }> };
+      const run = body.data?.[0];
+      if (!run?.id) return { observer_state: "PENDING", failure_event_id: eventId };
+      return { observer_state: run.status?.toUpperCase() ?? "UNKNOWN", failure_event_id: eventId, child_run_id: run.id, function_id: run.function?.id, function_name: run.function?.name, trigger_event_ids: run.trigger?.eventIds, trigger_event_name: run.trigger?.eventName };
+    });
+    return { phase: "OBSERVE", observer_run_id: runId, observation };
+  },
+);
 export const aosFailureProbe = inngest.createFunction(
   {
     id: "aos-failure-probe",
@@ -131,6 +163,8 @@ export const aosRecoveryProbe = inngest.createFunction(
 export const functions = [
   aosRuntimeProbe,
   aosControlledConformanceValidation,
+  aosControlledConformanceDispatch,
+  aosControlledConformanceObserver,
   aosFailureProbe,
   aosRecoveryContinuation,
   aosRecoveryProbe
