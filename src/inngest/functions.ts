@@ -72,60 +72,6 @@ export const aosControlledConformanceDispatch = inngest.createFunction(
   },
 );
 
-export const aosControlledConformanceObserver = inngest.createFunction(
-  {
-    id: "aos-controlled-conformance-observer",
-    retries: 0,
-    triggers: [{ event: "aos/conformance.observe.phase" }]
-  },
-  async ({ event, step, runId }) => {
-    const childRunId =
-      typeof event.data?.child_run_id === "string"
-        ? event.data.child_run_id
-        : undefined;
-    if (!childRunId) throw new Error("child_run_id_required");
-
-    const observation = await step.run("observe-provider-run", async () => {
-      const response = await fetch(
-        "https://api.inngest.com/v1/runs/" + encodeURIComponent(childRunId),
-        {
-          headers: {
-            Authorization: "Bearer " + (process.env.INNGEST_SIGNING_KEY ?? ""),
-            "x-inngest-env": process.env.INNGEST_ENV ?? "production",
-          },
-        },
-      );
-      if (!response.ok) throw new Error("observer_api_error:" + response.status);
-      const body = (await response.json()) as {
-        data?: {
-          id?: string;
-          status?: string;
-          function?: { id?: string; name?: string };
-          trigger?: { eventIds?: string[]; eventName?: string };
-          output?: unknown;
-        };
-      };
-      const run = body.data;
-      if (!run?.id) throw new Error("provider_run_not_found:" + childRunId);
-      return {
-        observer_state: run.status?.toUpperCase() ?? "UNKNOWN",
-        child_run_id: run.id,
-        function_id: run.function?.id,
-        function_name: run.function?.name,
-        trigger_event_ids: run.trigger?.eventIds,
-        trigger_event_name: run.trigger?.eventName,
-        output: run.output,
-      };
-    });
-
-    return {
-      phase: "OBSERVE",
-      observer_run_id: runId,
-      observation,
-    };
-  },
-);
-
 export const aosFailureProbe = inngest.createFunction(
   {
     id: "aos-failure-probe",
@@ -200,7 +146,6 @@ export const functions = [
   aosRuntimeProbe,
   aosControlledConformanceValidation,
   aosControlledConformanceDispatch,
-  aosControlledConformanceObserver,
   aosFailureProbe,
   aosRecoveryContinuation,
   aosRecoveryProbe
