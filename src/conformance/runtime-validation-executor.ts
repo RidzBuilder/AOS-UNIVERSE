@@ -86,6 +86,7 @@ function linkEvidence(
 
 export async function executeControlledRuntimeValidation(
   durableInvoke?: DurableInvoke,
+  durableEventSender?: (event: { id: string; name: string; data: Record<string, unknown> }) => Promise<string>,
 ): Promise<{
   adapter_id: string;
   capability_boundary: readonly string[];
@@ -201,12 +202,16 @@ export async function executeControlledRuntimeValidation(
   }
 
   const failureRequest = requestFor(failure.test_id, "01", validationContext);
+  if (!durableEventSender) {
+    throw new Error("durable_event_sender_required_for_failure_recovery");
+  }
   const failureObservation = await adapter.injectFailure(
     failureRequest.execution_id,
     {
       mode: "CONTROLLED_NON_RETRIABLE_FAILURE",
       reason: "AOS failure-state conformance probe",
     },
+    durableEventSender,
   );
   const failureEvidence = failureObservation.evidence;
   const failureExplicit =
@@ -237,6 +242,7 @@ export async function executeControlledRuntimeValidation(
       strategy: "CONTROLLED_CONTINUATION",
       failed_execution_id: failureObservation.execution.execution_id,
     },
+    durableEventSender,
   );
   const recoveryEvidence = recoveryObservation.evidence;
   const recoveryOutput = recoveryEvidence[0]?.observation;
