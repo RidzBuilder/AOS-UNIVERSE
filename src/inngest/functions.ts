@@ -25,12 +25,10 @@ export const aosControlledConformanceValidation = inngest.createFunction(
     triggers: [{ event: "aos/conformance.validate.controlled" }]
   },
   async ({ step }) => {
-    return step.run("controlled-runtime-validation", async () => {
-      return executeControlledRuntimeValidation(async (id, request) => {
-        return step.invoke(id, {
-          function: aosRuntimeProbe,
-          data: request.input
-        });
+    return executeControlledRuntimeValidation(async (id, request) => {
+      return step.invoke(id, {
+        function: aosRuntimeProbe,
+        data: request.input
       });
     });
   }
