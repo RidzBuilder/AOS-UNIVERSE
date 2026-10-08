@@ -2,6 +2,11 @@
 
 ## Current Gate
 
+**Latest Gate: GATE N+4R-001 — BLOCKED / REMEDIATION REQUIRED**
+
+Latest controlled revalidation confirmed that the application-originated failure event remains unobserved after stable durable step-ID separation. Production deployment and Inngest synchronization are healthy, but the application-originated event-to-run evidence boundary is not closed. See `docs/implementation/conformance/GATE-N4R-REVALIDATION-001.md`.
+
+
 Failure & Recovery Boundary: PASS / SCOPED
 Canonical State & Authorization Boundary: PASS / SCOPED
 Canonical Repository Binding: PASS
