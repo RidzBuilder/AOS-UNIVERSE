@@ -14,7 +14,14 @@ export const aosRuntimeProbe = inngest.createFunction(
       run_id: runId,
       attempt,
       execution_state: "COMPLETED",
-      observation
+      observation: {
+        ...observation,
+        state_trace: ["RUNNING", "COMPLETED"],
+        effect_reference:
+          typeof event.data?.idempotency_key === "string"
+            ? `aos-effect:${event.data.idempotency_key}`
+            : undefined
+      }
     };
   }
 );
