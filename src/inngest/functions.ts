@@ -58,43 +58,6 @@ export const aosControlledConformanceValidation = inngest.createFunction(
   }
 );
 
-export const aosEventDispatchSink = inngest.createFunction(
-  {
-    id: "aos-event-dispatch-sink",
-    retries: 0,
-    triggers: [{ event: "aos/runtime.dispatch.sink" }]
-  },
-  async ({ event }) => ({
-    observed: true,
-    probe_id:
-      typeof event.data?.probe_id === "string"
-        ? event.data.probe_id
-        : "unknown"
-  }),
-);
-
-export const aosEventDispatchProbe = inngest.createFunction(
-  {
-    id: "aos-event-dispatch-probe",
-    retries: 0,
-    triggers: [{ event: "aos/runtime.event.dispatch.probe" }]
-  },
-  async ({ event, step, runId }) => {
-    const probeId =
-      typeof event.data?.probe_id === "string"
-        ? event.data.probe_id
-        : runId;
-    const result = await step.sendEvent("dispatch-probe-event", {
-      id: `aos-dispatch-probe:${probeId}`,
-      name: "aos/runtime.dispatch.sink",
-      data: { probe_id: probeId }
-    });
-    const eventId = result.ids[0];
-    if (!eventId) throw new Error("dispatch_probe_event_id_missing");
-    return { probe_id: probeId, event_id: eventId };
-  },
-);
-
 export const aosFailureProbe = inngest.createFunction(
   {
     id: "aos-failure-probe",
@@ -168,8 +131,6 @@ export const aosRecoveryProbe = inngest.createFunction(
 export const functions = [
   aosRuntimeProbe,
   aosControlledConformanceValidation,
-  aosEventDispatchProbe,
-  aosEventDispatchSink,
   aosFailureProbe,
   aosRecoveryContinuation,
   aosRecoveryProbe
