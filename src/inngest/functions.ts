@@ -38,7 +38,13 @@ export const aosControlledConformanceValidation = inngest.createFunction(
   },
   async ({ step }) => {
     const sendEvent = async (event: { id: string; name: string; data: Record<string, unknown> }) => {
-      const result = await step.sendEvent("controlled-failure-or-recovery-event", event);
+      const stepId =
+        event.name === "aos/runtime.failure.probe"
+          ? "controlled-failure-event"
+          : event.name === "aos/runtime.recovery.probe"
+            ? "controlled-recovery-event"
+            : "controlled-conformance-event";
+      const result = await step.sendEvent(stepId, event);
       const eventId = result.ids[0];
       if (!eventId) throw new Error("controlled_conformance_event_id_missing");
       return eventId;
