@@ -69,3 +69,33 @@ PASS means only:
 `Runtime Conformance Adapter Contract = formally represented and provider-neutral.`
 
 The next gate is implementation of an authorized adapter and its evidence boundary, followed by controlled validation.
+
+
+## Implementation Boundary Update
+
+The contract is now backed by an implementation split:
+
+- provider-neutral contract: `src/conformance/runtime-adapter.ts`;
+- Inngest adapter normalization: `src/conformance/adapters/inngest-runtime-adapter.ts`;
+- Inngest Cloud binding: `src/conformance/adapters/inngest-cloud-binding.ts`;
+- family capability mapping: `src/conformance/runtime-adapter-binding.ts`;
+- build-time binding validation: `scripts/validate-runtime-adapter-binding.mjs`.
+
+The Inngest Cloud binding uses real provider operations for event submission and run observation. It does not synthesize runtime results. Missing provider credentials or missing provider-side observations are hard errors.
+
+Current binding scope:
+
+| Capability | State |
+|---|---|
+| Authorization precondition | IMPLEMENTED |
+| State observation | IMPLEMENTED |
+| Evidence capture | IMPLEMENTED |
+| Idempotency/repeat path | IMPLEMENTED |
+| Security boundary | REPRESENTED / NOT CONFORMANCE-VALIDATED |
+| Failure injection | NOT IMPLEMENTED |
+| Recovery/retry control | NOT IMPLEMENTED |
+| Trace correlation | NOT IMPLEMENTED |
+| Provider substitution | NOT APPLICABLE TO SINGLE PROVIDER |
+| Golden Path | NOT AUTHORIZED |
+
+Therefore this implementation gate is PASS only for the adapter/binding boundary. It does not promote any runtime conformance family to PASS, does not activate Inngest, and does not authorize Golden Path.
