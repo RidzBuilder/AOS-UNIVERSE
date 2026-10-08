@@ -6,9 +6,31 @@ export const CONTROLLED_EXECUTION_STATE_TRACE = [
   "COMPLETED",
 ] as const;
 
-const ALLOWED_TRANSITIONS: Readonly<Record<string, readonly string[]>> = {
-  AUTHORIZED: ["RUNNING"],
-  RUNNING: ["COMPLETED"],
+export const CONTROLLED_FAILURE_RECOVERY_STATE_TRACE = [
+  "AUTHORIZED",
+  "RUNNING",
+  "FAILED",
+  "RECOVERING",
+  "RECOVERED",
+] as const;
+
+export type CanonicalExecutionState =
+  | "AUTHORIZED"
+  | "RUNNING"
+  | "COMPLETED"
+  | "FAILED"
+  | "RECOVERING"
+  | "RECOVERED"
+  | "BLOCKED";
+
+const ALLOWED_TRANSITIONS: Readonly<Record<CanonicalExecutionState, readonly CanonicalExecutionState[]>> = {
+  AUTHORIZED: ["RUNNING", "BLOCKED"],
+  RUNNING: ["COMPLETED", "FAILED", "BLOCKED"],
+  FAILED: ["RECOVERING", "BLOCKED"],
+  RECOVERING: ["RECOVERED", "FAILED", "BLOCKED"],
+  RECOVERED: ["COMPLETED"],
+  COMPLETED: [],
+  BLOCKED: [],
 };
 
 export function validateExecutionStateTrace(
@@ -19,8 +41,8 @@ export function validateExecutionStateTrace(
   }
 
   for (let index = 0; index < trace.length - 1; index += 1) {
-    const current = trace[index];
-    const next = trace[index + 1];
+    const current = trace[index] as CanonicalExecutionState;
+    const next = trace[index + 1] as CanonicalExecutionState;
     if (!ALLOWED_TRANSITIONS[current]?.includes(next)) {
       return {
         valid: false,
@@ -31,7 +53,7 @@ export function validateExecutionStateTrace(
 
   return {
     valid: true,
-    reason: "declared_controlled_execution_transitions_observed",
+    reason: "declared_canonical_execution_transitions_observed",
   };
 }
 
