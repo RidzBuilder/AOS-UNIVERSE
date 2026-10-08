@@ -109,7 +109,7 @@ function snapshot(
 }
 
 async function findRun(eventId: string): Promise<InngestRun> {
-  const deadline = Date.now() + 20_000;
+  const deadline = Date.now() + 60_000;
 
   while (Date.now() < deadline) {
     const response = await getJson<InngestRunsResponse>(
