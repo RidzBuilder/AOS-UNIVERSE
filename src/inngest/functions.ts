@@ -1,4 +1,5 @@
 import { inngest } from "./client";
+import { executeControlledRuntimeValidation } from "../conformance/runtime-validation-executor";
 
 export const aosRuntimeProbe = inngest.createFunction(
   { id: "aos-runtime-probe", triggers: [{ event: "aos/runtime.probe" }] },
@@ -16,4 +17,19 @@ export const aosRuntimeProbe = inngest.createFunction(
   }
 );
 
-export const functions = [aosRuntimeProbe];
+export const aosControlledConformanceValidation = inngest.createFunction(
+  {
+    id: "aos-controlled-conformance-validation",
+    triggers: [{ event: "aos/conformance.validate.controlled" }]
+  },
+  async ({ step }) => {
+    return step.run("controlled-runtime-validation", async () => {
+      return executeControlledRuntimeValidation();
+    });
+  }
+);
+
+export const functions = [
+  aosRuntimeProbe,
+  aosControlledConformanceValidation
+];
