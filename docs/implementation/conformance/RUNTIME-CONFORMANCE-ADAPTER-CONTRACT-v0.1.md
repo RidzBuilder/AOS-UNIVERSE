@@ -92,10 +92,10 @@ Current binding scope:
 | Evidence capture | IMPLEMENTED |
 | Idempotency/repeat path | IMPLEMENTED |
 | Security boundary | REPRESENTED / NOT CONFORMANCE-VALIDATED |
-| Failure injection | NOT IMPLEMENTED |
-| Recovery/retry control | NOT IMPLEMENTED |
+| Failure injection | IMPLEMENTED / CONTROLLED PROVIDER PROBE |
+| Recovery/retry control | IMPLEMENTED / BOUNDED CONTINUATION PROBE |
 | Trace correlation | NOT IMPLEMENTED |
 | Provider substitution | NOT APPLICABLE TO SINGLE PROVIDER |
 | Golden Path | NOT AUTHORIZED |
 
-Therefore this implementation gate is PASS only for the adapter/binding boundary. It does not promote any runtime conformance family to PASS, does not activate Inngest, and does not authorize Golden Path.
+Failure/recovery provider mechanics are now implemented behind the adapter boundary and have passed a scoped controlled runtime validation. This does not promote Inngest to generally conformant, does not activate provider authorization beyond the current scoped validation, and does not authorize Golden Path.
