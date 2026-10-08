@@ -193,65 +193,21 @@ export async function executeControlledRuntimeValidation(
   validations.push(evidenceValidation);
 
   const idempotency = byId("AOS-IDEMPOTENCY-001");
-  const idempotencyRequest = requestFor(idempotency.test_id, "01", validationContext);
-  const firstObservation = await adapter.start(idempotencyRequest);
-  const firstEffectReference = canonicalEffectReference(idempotencyRequest);
-
-  let repeatedObservation = firstObservation;
-  let duplicateRejected = false;
-  let duplicateEvidence: EvidenceRecord[] = [];
-
-  try {
-    repeatedObservation = await adapter.repeat(idempotencyRequest);
-  } catch (error) {
-    duplicateRejected = true;
-    duplicateEvidence = [{
-      evidence_id: `aos-idempotency-rejection-${firstObservation.execution.execution_id}`,
-      source_reference: `inngest:event:${idempotencyRequest.idempotency_key}`,
-      observation: {
-        request_reference: idempotencyRequest.request_reference,
-        effect_reference: firstEffectReference,
-        duplicate_request_rejected: true,
-        error: error instanceof Error ? error.message : String(error),
-      },
-      provenance: {
-        provider: "inngest",
-        mechanism: "event-id-idempotency",
-        source: "real provider execution",
-      },
-      timestamp: new Date().toISOString(),
-      status: "OBSERVED",
-    }];
-  }
-
-  const sameRun =
-    firstObservation.execution.execution_id ===
-    repeatedObservation.execution.execution_id;
+  const idempotencyEvidence: EvidenceRecord[] = [];
   const idempotencyResult = executeTest(
     idempotency,
-    duplicateRejected || sameRun
-      ? `Equivalent requests retained one canonical effect identity (${firstEffectReference}); provider execution identity was ${sameRun ? "reused" : "rejected on duplicate"}.`
-      : "Equivalent request produced a second provider execution identity; duplicate-effect semantics are not established.",
-    [
-      ...firstObservation.evidence,
-      ...repeatedObservation.evidence,
-      ...duplicateEvidence,
-    ].map((item) => item.evidence_id),
-    "AOS-VALIDATION-IDEMPOTENCY-BOUNDARY-005",
-    duplicateRejected || sameRun ? "PASS" : "BLOCKED",
+    "Controlled parent self-invocation is not used for duplicate testing because provider duplicate rejection can fail the invoking function boundary. Provider-level event-id idempotency is validated separately through an externally triggered controlled test.",
+    [],
+    "AOS-VALIDATION-IDEMPOTENCY-BOUNDARY-EXTERNAL-001",
+    "BLOCKED",
   );
   const idempotencyValidation = validationFor(
     idempotency.test_id,
     idempotencyResult,
-    [...firstObservation.evidence, ...duplicateEvidence],
+    idempotencyEvidence,
   );
   results.push(idempotencyResult);
-  evidence.push(
-    ...linkEvidence(
-      [...firstObservation.evidence, ...repeatedObservation.evidence, ...duplicateEvidence],
-      idempotencyValidation.validation_id,
-    ),
-  );
+  evidence.push(...linkEvidence(idempotencyEvidence, idempotencyValidation.validation_id));
   validations.push(idempotencyValidation);
 
   return {
