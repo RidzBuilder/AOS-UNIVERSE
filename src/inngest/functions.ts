@@ -1,6 +1,5 @@
 import { inngest } from "./client";
 import { NonRetriableError } from "inngest";
-import { executeControlledRuntimeValidation } from "../conformance/runtime-validation-executor";
 
 export const aosRuntimeProbe = inngest.createFunction(
   {
@@ -28,33 +27,6 @@ export const aosRuntimeProbe = inngest.createFunction(
             : undefined
       }
     };
-  }
-);
-
-export const aosControlledConformanceValidation = inngest.createFunction(
-  {
-    id: "aos-controlled-conformance-validation",
-    triggers: [{ event: "aos/conformance.validate.controlled" }]
-  },
-  async ({ step }) => {
-    const sendEvent = async (event: { id: string; name: string; data: Record<string, unknown> }) => {
-      const stepId =
-        event.name === "aos/runtime.failure.probe"
-          ? "controlled-failure-event"
-          : event.name === "aos/runtime.recovery.probe"
-            ? "controlled-recovery-event"
-            : "controlled-conformance-event";
-      const result = await step.sendEvent(stepId, event);
-      const eventId = result.ids[0];
-      if (!eventId) throw new Error("controlled_conformance_event_id_missing");
-      return eventId;
-    };
-    return executeControlledRuntimeValidation(async (id, request) => {
-      return step.invoke(id, {
-        function: aosRuntimeProbe,
-        data: request.input
-      });
-    }, sendEvent);
   }
 );
 
@@ -144,7 +116,6 @@ export const aosRecoveryProbe = inngest.createFunction(
 
 export const functions = [
   aosRuntimeProbe,
-  aosControlledConformanceValidation,
   aosControlledConformanceDispatch,
   aosFailureProbe,
   aosRecoveryContinuation,
