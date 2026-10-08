@@ -13,6 +13,7 @@ import {
   isUnauthorizedFixture,
   validateExecutionStateTrace,
 } from "./canonical-execution-semantics";
+import { auditConformanceEvidenceSpines } from "./evidence-spine";
 
 type DurableInvocationResult = {
   run_id: string;
@@ -91,6 +92,7 @@ export async function executeControlledRuntimeValidation(
   results: ConformanceTestResult[];
   evidence: EvidenceRecord[];
   validations: ValidationResult[];
+  evidence_spine_audit: ReturnType<typeof auditConformanceEvidenceSpines>;
 }> {
   const results: ConformanceTestResult[] = [];
   const evidence: EvidenceRecord[] = [];
@@ -281,11 +283,18 @@ export async function executeControlledRuntimeValidation(
   evidence.push(...linkEvidence(idempotencyEvidence, idempotencyValidation.validation_id));
   validations.push(idempotencyValidation);
 
+  const evidence_spine_audit = auditConformanceEvidenceSpines(
+    results,
+    evidence,
+    validations,
+  );
+
   return {
     adapter_id: adapter.adapter_id,
     capability_boundary: adapter.capabilities,
     results,
     evidence,
     validations,
+    evidence_spine_audit,
   };
 }
