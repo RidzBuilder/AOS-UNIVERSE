@@ -38,42 +38,16 @@ export const aosControlledConformanceValidation = inngest.createFunction(
   },
   async ({ step }) => {
     const sendEvent = async (event: { id: string; name: string; data: Record<string, unknown> }) => {
-      const eventKey = process.env.INNGEST_EVENT_KEY;
-      if (!eventKey) throw new Error("missing_provider_credential:INNGEST_EVENT_KEY");
-
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 10_000);
-      try {
-        const response = await fetch(`https://inn.gs/e/${eventKey}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(process.env.INNGEST_ENV
-              ? { "x-inngest-env": process.env.INNGEST_ENV }
-              : {}),
-          },
-          body: JSON.stringify(event),
-          signal: controller.signal,
-        });
-
-        const body = (await response.json()) as {
-          ids?: string[];
-          status?: number;
-          error?: unknown;
-        };
-
-        if (!response.ok || body.status !== 200 || body.error) {
-          throw new Error(
-            `inngest_event_api_error:${response.status}:${JSON.stringify(body.error ?? body)}`,
-          );
-        }
-
-        const eventId = body.ids?.[0];
-        if (!eventId) throw new Error("controlled_conformance_event_id_missing");
-        return eventId;
-      } finally {
-        clearTimeout(timeout);
-      }
+      const stepId =
+        event.name === "aos/runtime.failure.probe"
+          ? "controlled-failure-event"
+          : event.name === "aos/runtime.recovery.probe"
+            ? "controlled-recovery-event"
+            : "controlled-conformance-event";
+      const result = await step.sendEvent(stepId, event);
+      const eventId = result.ids[0];
+      if (!eventId) throw new Error("controlled_conformance_event_id_missing");
+      return eventId;
     };
     return executeControlledRuntimeValidation(async (id, request) => {
       return step.invoke(id, {
@@ -82,6 +56,43 @@ export const aosControlledConformanceValidation = inngest.createFunction(
       });
     }, sendEvent);
   }
+);
+
+export const aosEventDispatchSink = inngest.createFunction(
+  {
+    id: "aos-event-dispatch-sink",
+    retries: 0,
+    triggers: [{ event: "aos/runtime.dispatch.sink" }]
+  },
+  async ({ event }) => ({
+    observed: true,
+    probe_id:
+      typeof event.data?.probe_id === "string"
+        ? event.data.probe_id
+        : "unknown"
+  }),
+);
+
+export const aosEventDispatchProbe = inngest.createFunction(
+  {
+    id: "aos-event-dispatch-probe",
+    retries: 0,
+    triggers: [{ event: "aos/runtime.event.dispatch.probe" }]
+  },
+  async ({ event, step, runId }) => {
+    const probeId =
+      typeof event.data?.probe_id === "string"
+        ? event.data.probe_id
+        : runId;
+    const result = await step.sendEvent("dispatch-probe-event", {
+      id: `aos-dispatch-probe:${probeId}`,
+      name: "aos/runtime.dispatch.sink",
+      data: { probe_id: probeId }
+    });
+    const eventId = result.ids[0];
+    if (!eventId) throw new Error("dispatch_probe_event_id_missing");
+    return { probe_id: probeId, event_id: eventId };
+  },
 );
 
 export const aosFailureProbe = inngest.createFunction(
@@ -157,6 +168,8 @@ export const aosRecoveryProbe = inngest.createFunction(
 export const functions = [
   aosRuntimeProbe,
   aosControlledConformanceValidation,
+  aosEventDispatchProbe,
+  aosEventDispatchSink,
   aosFailureProbe,
   aosRecoveryContinuation,
   aosRecoveryProbe
