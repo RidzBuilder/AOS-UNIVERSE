@@ -90,6 +90,7 @@ export const aosControlledConformanceObserver = inngest.createFunction(
           {
             headers: {
               Authorization: "Bearer " + (process.env.INNGEST_SIGNING_KEY ?? ""),
+              "x-inngest-env": process.env.INNGEST_ENV ?? "production",
             },
           },
         );
