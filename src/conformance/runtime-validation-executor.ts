@@ -86,7 +86,6 @@ function linkEvidence(
 
 export async function executeControlledRuntimeValidation(
   durableInvoke?: DurableInvoke,
-  durableEventSender?: (event: { id: string; name: string; data: Record<string, unknown> }) => Promise<string>,
 ): Promise<{
   adapter_id: string;
   capability_boundary: readonly string[];
@@ -202,17 +201,17 @@ export async function executeControlledRuntimeValidation(
   }
 
   const failureRequest = requestFor(failure.test_id, "01", validationContext);
-  if (!durableEventSender) {
-    throw new Error("durable_event_sender_required_for_failure_recovery");
+  if (!adapter.dispatchFailure || !adapter.observeDispatch || !adapter.dispatchRecovery) {
+    throw new Error("split_phase_runtime_control_boundary_required");
   }
-  const failureObservation = await adapter.injectFailure(
+  const failureDispatch = await adapter.dispatchFailure(
     failureRequest.execution_id,
     {
       mode: "CONTROLLED_NON_RETRIABLE_FAILURE",
       reason: "AOS failure-state conformance probe",
     },
-    durableEventSender,
   );
+  const failureObservation = await adapter.observeDispatch(failureDispatch);
   const failureEvidence = failureObservation.evidence;
   const failureExplicit =
     failureObservation.execution.execution_state.toUpperCase() === "FAILED";
@@ -236,14 +235,14 @@ export async function executeControlledRuntimeValidation(
     throw new Error("recovery_capability_required");
   }
 
-  const recoveryObservation = await adapter.recover(
-    failureRequest.execution_id,
+  const recoveryDispatch = await adapter.dispatchRecovery(
+    failureObservation.execution.execution_id,
     {
       strategy: "CONTROLLED_CONTINUATION",
       failed_execution_id: failureObservation.execution.execution_id,
     },
-    durableEventSender,
   );
+  const recoveryObservation = await adapter.observeDispatch(recoveryDispatch);
   const recoveryEvidence = recoveryObservation.evidence;
   const recoveryOutput = recoveryEvidence[0]?.observation;
   const recoveryObject =
