@@ -1,4 +1,5 @@
 import { inngest } from "./client";
+import { NonRetriableError } from "inngest";
 import { executeControlledRuntimeValidation } from "../conformance/runtime-validation-executor";
 
 export const aosRuntimeProbe = inngest.createFunction(
@@ -45,7 +46,80 @@ export const aosControlledConformanceValidation = inngest.createFunction(
   }
 );
 
+export const aosFailureProbe = inngest.createFunction(
+  {
+    id: "aos-failure-probe",
+    retries: { attempts: 1 },
+    triggers: [{ event: "aos/runtime.failure.probe" }]
+  },
+  async ({ event }) => {
+    const executionId =
+      typeof event.data?.execution_id === "string"
+        ? event.data.execution_id
+        : "unknown";
+    throw new NonRetriableError(
+      `AOS controlled failure injection: ${executionId}`,
+    );
+  },
+);
+
+export const aosRecoveryContinuation = inngest.createFunction(
+  {
+    id: "aos-recovery-continuation",
+    retries: { attempts: 1 },
+    triggers: [{ event: "aos/runtime.recovery.continue" }]
+  },
+  async ({ event, step, runId }) => {
+    const failedExecutionId =
+      typeof event.data?.failed_execution_id === "string"
+        ? event.data.failed_execution_id
+        : "unknown";
+
+    return step.run("recovery-continuation", async () => ({
+      recovery_state: "RECOVERED",
+      failed_execution_id: failedExecutionId,
+      recovery_run_id: runId,
+      recovery_trace: ["RECOVERING", "RECOVERED"],
+    }));
+  },
+);
+
+export const aosRecoveryProbe = inngest.createFunction(
+  {
+    id: "aos-recovery-probe",
+    retries: { attempts: 1 },
+    triggers: [{ event: "aos/runtime.recovery.probe" }]
+  },
+  async ({ event, step, runId }) => {
+    const failedExecutionId =
+      typeof event.data?.failed_execution_id === "string"
+        ? event.data.failed_execution_id
+        : "unknown";
+
+    const continuation = await step.invoke("recovery-continuation", {
+      function: aosRecoveryContinuation,
+      data: {
+        failed_execution_id: failedExecutionId,
+      },
+    });
+
+    return {
+      run_id: runId,
+      execution_state: "RECOVERED",
+      observation: {
+        failed_execution_id: failedExecutionId,
+        recovery_run_id: runId,
+        continuation,
+        recovery_trace: ["RECOVERING", "RECOVERED"],
+      },
+    };
+  },
+);
+
 export const functions = [
   aosRuntimeProbe,
-  aosControlledConformanceValidation
+  aosControlledConformanceValidation,
+  aosFailureProbe,
+  aosRecoveryContinuation,
+  aosRecoveryProbe
 ];
