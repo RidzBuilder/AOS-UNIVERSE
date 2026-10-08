@@ -82,10 +82,41 @@ export const aosControlledConformanceObserver = inngest.createFunction(
         headers: { Authorization: "Bearer " + (process.env.INNGEST_SIGNING_KEY ?? "") },
       });
       if (!response.ok) throw new Error("observer_api_error:" + response.status);
-      const body = (await response.json()) as { data?: Array<{ id?: string; status?: string; function?: { id?: string; name?: string }; trigger?: { eventIds?: string[]; eventName?: string } }> };
-      const run = body.data?.[0];
-      if (!run?.id) return { observer_state: "PENDING", failure_event_id: eventId };
-      return { observer_state: run.status?.toUpperCase() ?? "UNKNOWN", failure_event_id: eventId, child_run_id: run.id, function_id: run.function?.id, function_name: run.function?.name, trigger_event_ids: run.trigger?.eventIds, trigger_event_name: run.trigger?.eventName };
+      const deadline = Date.now() + 20_000;
+      const terminal = new Set(["COMPLETED", "FAILED", "CANCELLED", "SKIPPED"]);
+      while (Date.now() < deadline) {
+        const response = await fetch(
+          "https://api.inngest.com/v1/events/" + encodeURIComponent(eventId) + "/runs",
+          {
+            headers: {
+              Authorization: "Bearer " + (process.env.INNGEST_SIGNING_KEY ?? ""),
+            },
+          },
+        );
+        if (!response.ok) throw new Error("observer_api_error:" + response.status);
+        const body = (await response.json()) as {
+          data?: Array<{
+            id?: string;
+            status?: string;
+            function?: { id?: string; name?: string };
+            trigger?: { eventIds?: string[]; eventName?: string };
+          }>
+        };
+        const run = body.data?.[0];
+        if (run?.id && terminal.has((run.status ?? "").toUpperCase())) {
+          return {
+            observer_state: run.status?.toUpperCase() ?? "UNKNOWN",
+            failure_event_id: eventId,
+            child_run_id: run.id,
+            function_id: run.function?.id,
+            function_name: run.function?.name,
+            trigger_event_ids: run.trigger?.eventIds,
+            trigger_event_name: run.trigger?.eventName,
+          };
+        }
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+      return { observer_state: "PENDING", failure_event_id: eventId };
     });
     return { phase: "OBSERVE", observer_run_id: runId, observation };
   },
