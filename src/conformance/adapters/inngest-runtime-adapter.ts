@@ -171,6 +171,54 @@ export class InngestRuntimeAdapter implements RuntimeConformanceAdapter {
     return normalize(await this.binding.repeat(request));
   }
 
+  normalizeDurableInvocation(
+    request: RuntimeAdapterRequest,
+    invocation: {
+      run_id: string;
+      execution_state: string;
+      observation: unknown;
+      attempt: number;
+    },
+  ): RuntimeAdapterObservation {
+    const timestamp = new Date().toISOString();
+    const evidenceId = `aos-durable-runtime-${invocation.run_id}`;
+    const snapshot: InngestRuntimeSnapshot = {
+      execution: {
+        execution_id: invocation.run_id,
+        request_reference: request.request_reference,
+        authorization_reference: request.authorization_reference,
+        workflow_reference: request.workflow_reference,
+        runtime_reference: "inngest-cloud",
+        provider_reference: "inngest",
+        execution_state: invocation.execution_state,
+        timestamps: { observed_at: timestamp },
+        attempts: invocation.attempt + 1,
+        result_reference: `run-output:${invocation.run_id}`,
+        artifact_references: [],
+        failure_recovery_references: [],
+        trace_reference: `inngest:run:${invocation.run_id}`,
+      },
+      evidence: [{
+        evidence_id: evidenceId,
+        source_reference: `inngest:run:${invocation.run_id}`,
+        observation: {
+          run_id: invocation.run_id,
+          status: invocation.execution_state,
+          output: invocation.observation,
+          attempt: invocation.attempt,
+        },
+        provenance: {
+          provider: "inngest",
+          mechanism: "step.invoke",
+          source: "real provider execution",
+        },
+        timestamp,
+        status: "OBSERVED",
+      }],
+    };
+    return normalize(snapshot);
+  }
+
   async correlateTrace(
     executionId: string,
   ): Promise<RuntimeAdapterObservation> {
