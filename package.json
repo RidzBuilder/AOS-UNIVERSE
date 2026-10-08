@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/validate-conformance-harness.mjs && node scripts/execute-conformance-r8.mjs && next build",
+    "build": "node scripts/validate-conformance-harness.mjs && node scripts/validate-runtime-adapter-binding.mjs && node scripts/execute-conformance-r8.mjs && next build",
     "start": "next start",
     "lint": "next lint",
     "conformance:validate": "node scripts/validate-conformance-harness.mjs",
