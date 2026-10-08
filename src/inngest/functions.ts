@@ -37,12 +37,18 @@ export const aosControlledConformanceValidation = inngest.createFunction(
     triggers: [{ event: "aos/conformance.validate.controlled" }]
   },
   async ({ step }) => {
+    const sendEvent = async (event: { id: string; name: string; data: Record<string, unknown> }) => {
+      const result = await step.sendEvent("controlled-conformance-event", event);
+      const eventId = result.ids[0];
+      if (!eventId) throw new Error("controlled_conformance_event_id_missing");
+      return eventId;
+    };
     return executeControlledRuntimeValidation(async (id, request) => {
       return step.invoke(id, {
         function: aosRuntimeProbe,
         data: request.input
       });
-    });
+    }, sendEvent);
   }
 );
 
