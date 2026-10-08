@@ -82,12 +82,10 @@ export interface InngestRuntimeBinding {
   correlateTrace(executionId: string): Promise<InngestRuntimeSnapshot>;
 }
 
-const CAPABILITIES: readonly RuntimeAdapterCapability[] = [
+const BASE_CAPABILITIES: readonly RuntimeAdapterCapability[] = [
   "AUTHORIZATION",
   "STATE_OBSERVATION",
   "EVIDENCE_CAPTURE",
-  "FAILURE_INJECTION",
-  "RECOVERY_RETRY",
   "IDEMPOTENCY",
   "SECURITY_BOUNDARY",
   "TRACE_CORRELATION",
@@ -119,9 +117,14 @@ export class InngestRuntimeAdapter implements RuntimeConformanceAdapter {
   readonly adapter_id = "AOS-INNGEST-RUNTIME-ADAPTER";
   readonly version = "0.1.0";
   readonly provider_neutral = true as const;
-  readonly capabilities = CAPABILITIES;
+  readonly capabilities: readonly RuntimeAdapterCapability[];
 
-  constructor(private readonly binding: InngestRuntimeBinding) {}
+  constructor(private readonly binding: InngestRuntimeBinding) {
+    const capabilities = [...BASE_CAPABILITIES];
+    if (binding.injectFailure) capabilities.push("FAILURE_INJECTION");
+    if (binding.recover) capabilities.push("RECOVERY_RETRY");
+    this.capabilities = capabilities;
+  }
 
   async authorize(
     request: RuntimeAdapterRequest,
