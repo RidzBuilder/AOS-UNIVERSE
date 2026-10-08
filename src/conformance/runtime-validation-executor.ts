@@ -45,6 +45,7 @@ function requestFor(testId: string, suffix: string): RuntimeAdapterRequest {
     input: {
       conformance_test_id: testId,
       probe_id: `CONFORMANCE-${testId}-${suffix}`,
+      idempotency_key: `aos-conformance:${testId}:${suffix}`,
     },
   };
 }
