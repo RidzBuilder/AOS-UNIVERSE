@@ -274,3 +274,32 @@ Results: AOS-GOVERNANCE-001 BLOCKED; AOS-STATE-001 BLOCKED; AOS-EVIDENCE-001 PAS
 Overall decision remains PARTIAL / GOVERNED BLOCK. GAP-RD-05 and GAP-RD-07 remain OPEN. Golden Path, provider activation and Stage 18 remain NOT AUTHORIZED / NOT ACCEPTED.
 
 Next governed work: canonical state-transition binding; authorized unauthorized-execution fixture; canonical duplicate-effect semantics; failure injection; recovery/retry; trace correlation; security fixtures; second-provider substitution; independent re-validation; GAP-RD-05/GAP-RD-07 re-evaluation.
+
+
+## Canonical State & Authorization Boundary — 2026-10-08
+
+Gate result: **PASS / SCOPED**.
+
+Production implementation commit: `2e38f536cff69e86218cb4cf36dee7e53940fa88`.
+
+Production deployment: `dpl_3gDhfvTwBrHQku7bQ3CMUGykx6TC` / READY.
+
+Inngest synchronization: `7c3bd62b-2285-40be-9ec2-398d49ff93b6` / success.
+
+Controlled runtime validation run: `01M4E70B5TZYPXBNX4691XPY8C` / COMPLETED.
+
+Controlled results:
+- AOS-GOVERNANCE-001: PASS.
+- AOS-STATE-001: PASS.
+- AOS-EVIDENCE-001: PASS.
+- AOS-IDEMPOTENCY-001: BLOCKED in the parent-controlled path; provider duplicate validation was intentionally isolated.
+
+External provider idempotency validation:
+- first event produced run `01M4E6WYSPVPKNAG8TN2NVTRG6` / COMPLETED;
+- duplicate event submission produced no observed function run;
+- effect reference: `aos-effect:external-effect-001`;
+- decision: AOS-IDEMPOTENCY-001 PASS scoped to provider event-id duplicate prevention.
+
+Canonical State & Authorization Boundary therefore passes at the scoped evidence boundary.
+
+This gate does not promote GAP-RD-05 or GAP-RD-07 to CLOSED and does not authorize failure/recovery, security, observability, substitution, Golden Path, or Stage 18.
