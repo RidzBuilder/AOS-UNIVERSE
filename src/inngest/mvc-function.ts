@@ -30,22 +30,28 @@ export const aosMvcGoldenPath = inngest.createFunction(
       const result = await generateText({
         model: openai("gpt-4o-mini"),
         prompt:
-          "You are executing the AOS Minimal Viable Conformance probe. Call inspect_text exactly once with the user's input. Do not answer directly and do not request any other tool.",
+          "You are executing the AOS Minimal Viable Conformance probe. Call calculator exactly once to compute the arithmetic request in the user's input. Do not answer directly and do not request any other tool.",
         tools: {
-          inspect_text: tool({
-            description:
-              "Inspect the supplied text and return deterministic counts and a short preview.",
+          calculator: tool({
+            description: "Perform one basic arithmetic operation on two numbers.",
             inputSchema: z.object({
-              text: z.string().min(1).max(4000),
+              a: z.number().finite(),
+              b: z.number().finite(),
+              operation: z.enum(["add", "subtract", "multiply", "divide"]),
             }),
-            execute: async ({ text }) => ({
-              character_count: text.length,
-              word_count: text.trim().split(/\s+/).filter(Boolean).length,
-              preview: text.slice(0, 120),
-            }),
+            execute: async ({ a, b, operation }) => {
+              if (operation === "divide" && b === 0) {
+                throw new Error("calculator_division_by_zero");
+              }
+              const value = operation === "add" ? a + b
+                : operation === "subtract" ? a - b
+                : operation === "multiply" ? a * b
+                : a / b;
+              return { a, b, operation, result: value };
+            },
           }),
         },
-        toolChoice: { type: "tool", toolName: "inspect_text" },
+        toolChoice: { type: "tool", toolName: "calculator" },
       });
 
       if (result.steps.length !== 1) {
@@ -55,7 +61,7 @@ export const aosMvcGoldenPath = inngest.createFunction(
         throw new Error("mvc_expected_exactly_one_tool_call");
       }
       const calledTool = result.toolResults[0];
-      if (calledTool.toolName !== "inspect_text") {
+      if (calledTool.toolName !== "calculator") {
         throw new Error("mvc_unexpected_tool_executed");
       }
 
@@ -69,6 +75,7 @@ export const aosMvcGoldenPath = inngest.createFunction(
         tool_output: calledTool.output,
         finish_reason: result.finishReason,
         response_id: result.response.id,
+        usage: result.totalUsage,
       };
     });
 
