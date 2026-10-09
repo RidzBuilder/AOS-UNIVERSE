@@ -49,6 +49,11 @@ const markerGroups = [
 ].map((parts) => parts.join(""));
 
 for (const path of contentPaths) {
+  for (const marker of markerGroups) {
+    if (path.toLowerCase().includes(marker.toLowerCase())) {
+      errors.push({ path, reason: "cross_project_marker_in_changed_path", marker_class: marker });
+    }
+  }
   if (!fs.existsSync(path) || !fs.statSync(path).isFile()) continue;
   let content;
   try {
