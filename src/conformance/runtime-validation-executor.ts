@@ -150,7 +150,7 @@ export async function executeControlledRuntimeValidation(
   const stateObservationPayload = stateInvocation.observation as {
     output?: { output?: { observation?: { state_trace?: unknown } } };
   } | undefined;
-  const stateOutput = stateObservationPayload?.output?.output?.observation?.state_trace;
+  const stateOutput = stateObservationPayload?.output?.observation?.state_trace;
   const observedTrace = Array.isArray(stateOutput)
     ? ["AUTHORIZED", ...stateOutput.filter((item): item is string => typeof item === "string")]
     : ["AUTHORIZED", stateInvocation.execution_state];
