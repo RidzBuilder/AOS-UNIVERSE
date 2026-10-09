@@ -48,18 +48,22 @@ export const aosMvcGoldenPath = inngest.createFunction(
         toolChoice: { type: "tool", toolName: "inspect_text" },
       });
 
-      const calledTool = result.toolResults.find(
-        (item) => item.toolName === "inspect_text",
-      );
-      if (!calledTool) {
-        throw new Error("mvc_tool_not_executed");
+      if (result.steps.length !== 1) {
+        throw new Error("mvc_expected_exactly_one_llm_call");
+      }
+      if (result.toolResults.length !== 1) {
+        throw new Error("mvc_expected_exactly_one_tool_call");
+      }
+      const calledTool = result.toolResults[0];
+      if (calledTool.toolName !== "inspect_text") {
+        throw new Error("mvc_unexpected_tool_executed");
       }
 
       return {
         provider: "groq",
         model: process.env.AOS_GROQ_MODEL || "llama-3.3-70b-versatile",
-        llm_call_count: 1,
-        tool_call_count: 1,
+        llm_call_count: result.steps.length,
+        tool_call_count: result.toolResults.length,
         tool_name: calledTool.toolName,
         tool_input: calledTool.input,
         tool_output: calledTool.output,
