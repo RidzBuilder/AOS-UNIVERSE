@@ -18,8 +18,8 @@ try {
 }
 
 const diffRange = baseRef + "...HEAD";
-const changed = run(["diff", "--name-only", "-z", diffRange).split("\0").filter(Boolean);
-const contentPaths = run(["diff", "--name-only", "--diff-filter=ACMR", "-z", diffRange).split("\0").filter(Boolean);
+const changed = run(["diff", "--name-only", "-z", diffRange]).split("\0").filter(Boolean);
+const contentPaths = run(["diff", "--name-only", "--diff-filter=ACMR", "-z", diffRange]).split("\0").filter(Boolean);
 
 const allowedPrefixes = [
   ".github/", "GOVERNANCE/", "governance/", "docs/", "scripts/", "src/", "tests/"
