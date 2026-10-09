@@ -148,7 +148,7 @@ export async function executeControlledRuntimeValidation(
   const stateInvocation = await durableInvoke("state-observation", stateRequest);
   const stateObservation = adapter.normalizeDurableInvocation(stateRequest, stateInvocation);
   const stateObservationPayload = stateInvocation.observation as {
-    output?: { output?: { observation?: { state_trace?: unknown } } };
+    output?: { observation?: { state_trace?: unknown } };
   } | undefined;
   const stateOutput = stateObservationPayload?.output?.observation?.state_trace;
   const observedTrace = Array.isArray(stateOutput)
