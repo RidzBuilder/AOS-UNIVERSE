@@ -62,7 +62,7 @@ function validationFor(
 ): ValidationResult {
   const test = byId(testId);
   return {
-    validation_id: `AOS-VALIDATION-${testId}`,
+    validation_id: result.validation_reference,
     requirement_reference: test.requirement_reference,
     criteria_reference: test.validation_criteria.join("|"),
     test_or_assessment_reference: test.test_id,
@@ -147,11 +147,10 @@ export async function executeControlledRuntimeValidation(
   const stateRequest = requestFor(state.test_id, "01", validationContext);
   const stateInvocation = await durableInvoke("state-observation", stateRequest);
   const stateObservation = adapter.normalizeDurableInvocation(stateRequest, stateInvocation);
-  const stateOutput =
-    stateInvocation.observation &&
-    typeof stateInvocation.observation === "object"
-      ? (stateInvocation.observation as { state_trace?: unknown }).state_trace
-      : undefined;
+  const stateObservationPayload = stateInvocation.observation as {
+    output?: { output?: { observation?: { state_trace?: unknown } } };
+  } | undefined;
+  const stateOutput = stateObservationPayload?.output?.output?.observation?.state_trace;
   const observedTrace = Array.isArray(stateOutput)
     ? ["AUTHORIZED", ...stateOutput.filter((item): item is string => typeof item === "string")]
     : ["AUTHORIZED", stateInvocation.execution_state];
