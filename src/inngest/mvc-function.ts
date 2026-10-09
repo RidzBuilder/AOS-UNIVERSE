@@ -40,7 +40,7 @@ export const aosMvcGoldenPath = inngest.createFunction(
             }),
             execute: async ({ text }) => ({
               character_count: text.length,
-              word_count: text.trim().split(/\\s+/).filter(Boolean).length,
+              word_count: text.trim().split(/\s+/).filter(Boolean).length,
               preview: text.slice(0, 120),
             }),
           }),
