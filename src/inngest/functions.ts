@@ -1,5 +1,6 @@
 import { inngest } from "./client";
 import { NonRetriableError } from "inngest";
+import { aosMvcGoldenPath } from "./mvc-function";
 
 export const aosRuntimeProbe = inngest.createFunction(
   {
@@ -115,6 +116,7 @@ export const aosRecoveryProbe = inngest.createFunction(
 );
 
 export const functions = [
+  aosMvcGoldenPath,
   aosRuntimeProbe,
   aosControlledConformanceDispatch,
   aosFailureProbe,
