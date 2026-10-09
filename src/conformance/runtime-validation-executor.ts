@@ -41,7 +41,7 @@ function requestFor(
   validationContext: string,
 ): RuntimeAdapterRequest {
   return {
-    execution_id: `aos-conformance-${testId.toLowerCase().replaceAll("_", "-")}-${suffix}`,
+    execution_id: `aos-conformance-${testId.toLowerCase().replaceAll("_", "-")}-${suffix}-${validationContext}`,
     request_reference: `conformance-request:${testId}:${suffix}`,
     authorization_reference: `conformance-authorization:${testId}:${suffix}`,
     workflow_reference: "aos/runtime.probe",
