@@ -214,7 +214,7 @@ export const inngestCloudBinding: InngestRuntimeBinding = {
   },
 
   async dispatchFailure(executionId, scenario) {
-    const eventId = `aos-failure:${executionId}`;
+    const eventId = `aos-failure-${executionId}`;
     const sentEventId = await sendInngestEvent({
       id: eventId,
       name: "aos/runtime.failure.probe",
@@ -240,7 +240,7 @@ export const inngestCloudBinding: InngestRuntimeBinding = {
   },
 
   async dispatchRecovery(executionId, strategy) {
-    const eventId = `aos-recovery:${executionId}`;
+    const eventId = `aos-recovery-${executionId}`;
     const sentEventId = await sendInngestEvent({
       id: eventId,
       name: "aos/runtime.recovery.probe",
@@ -262,7 +262,7 @@ export const inngestCloudBinding: InngestRuntimeBinding = {
   },
 
   async injectFailure(executionId, scenario, sendEvent) {
-    const eventId = `aos-failure:${executionId}`;
+    const eventId = `aos-failure-${executionId}`;
     const event = {
       id: eventId,
       name: "aos/runtime.failure.probe",
@@ -284,7 +284,7 @@ export const inngestCloudBinding: InngestRuntimeBinding = {
   },
 
   async recover(executionId, strategy, sendEvent) {
-    const eventId = `aos-recovery:${executionId}`;
+    const eventId = `aos-recovery-${executionId}`;
     const event = {
       id: eventId,
       name: "aos/runtime.recovery.probe",
