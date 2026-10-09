@@ -15,9 +15,25 @@ export async function GET(request: Request) {
         route: "AOS controlled conformance control plane",
         execution: "not_started",
         requirement: "GAP-RD-05",
-        note: "Use the protected control-plane query execute=1 to start a fresh canonical conformance run.",
+        note: "Execution requires the configured control-plane bearer token and a protected deployment boundary."
       },
       { status: 200, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
+  const configuredToken = process.env.AOS_CONTROL_PLANE_TOKEN;
+  if (!configuredToken) {
+    return NextResponse.json(
+      { gate: "GAP-RD-05", result_state: "BLOCKED", reason: "control_plane_auth_not_configured" },
+      { status: 503, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
+  const authorization = request.headers.get("authorization");
+  if (authorization !== "Bearer " + configuredToken) {
+    return NextResponse.json(
+      { gate: "GAP-RD-05", result_state: "BLOCKED", reason: "unauthorized" },
+      { status: 401, headers: { "Cache-Control": "no-store", "WWW-Authenticate": "Bearer" } },
     );
   }
 
@@ -36,20 +52,16 @@ export async function GET(request: Request) {
     );
 
     return NextResponse.json(
-      {
-        gate: "GAP-RD-05",
-        execution_mode: "EXTERNAL_CONTROL_PLANE",
-        report,
-      },
+      { gate: "GAP-RD-05", execution_mode: "EXTERNAL_CONTROL_PLANE", report },
       { status: 200, headers: { "Cache-Control": "no-store" } },
     );
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       {
         gate: "GAP-RD-05",
         execution_mode: "EXTERNAL_CONTROL_PLANE",
         result_state: "BLOCKED",
-        error: error instanceof Error ? error.message : String(error),
+        error: "controlled_validation_failed"
       },
       { status: 500, headers: { "Cache-Control": "no-store" } },
     );

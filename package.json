@@ -6,10 +6,12 @@
     "dev": "next dev",
     "build": "node scripts/validate-conformance-harness.mjs && node scripts/validate-runtime-adapter-binding.mjs && node scripts/validate-evidence-spine.mjs && node scripts/execute-conformance-r8.mjs && next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint . --config .github/eslint.config.mjs",
     "conformance:validate": "node scripts/validate-conformance-harness.mjs",
     "conformance:r8": "node scripts/execute-conformance-r8.mjs",
-    "conformance:evidence-spine": "node scripts/validate-evidence-spine.mjs"
+    "conformance:r8:strict": "node scripts/strict-conformance-gate.mjs",
+    "conformance:evidence-spine": "node scripts/validate-evidence-spine.mjs",
+    "conformance:boundary": "node scripts/check-repository-boundary.mjs"
   },
   "dependencies": {
     "inngest": "4.21.1",
@@ -21,6 +23,8 @@
     "@types/node": "22.0.0",
     "@types/react": "19.0.0",
     "@types/react-dom": "19.0.0",
+    "eslint": "9.39.1",
+    "eslint-config-next": "16.3.8",
     "typescript": "5.9.3"
   }
 }

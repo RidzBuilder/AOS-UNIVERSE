@@ -1,19 +1,49 @@
-name: AOS Conformance Harness Validation
+name: AOS Repository Integrity and Conformance
 
 on:
+  pull_request:
+    branches: ["main"]
   push:
     branches: ["main"]
   workflow_dispatch:
+    inputs:
+      strict_conformance:
+        description: "Fail if any runtime/E2E conformance family remains BLOCKED"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
 
 jobs:
-  harness-validation:
+  integrity-and-conformance:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Repository path and contamination boundary
+        env:
+          AOS_BOUNDARY_BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before || 'origin/main' }}
+        run: node scripts/check-repository-boundary.mjs
       - name: Validate executable conformance harness
         run: node scripts/validate-conformance-harness.mjs
+      - name: Validate runtime adapter binding
+        run: node scripts/validate-runtime-adapter-binding.mjs
+      - name: Validate evidence spine
+        run: node scripts/validate-evidence-spine.mjs
       - name: TypeScript contract check
         run: npx tsc --noEmit
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+      - name: Strict conformance acceptance gate
+        if: github.event_name == 'workflow_dispatch' && inputs.strict_conformance == true
+        run: npm run conformance:r8:strict
