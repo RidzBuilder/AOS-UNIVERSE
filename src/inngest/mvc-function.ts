@@ -1,4 +1,4 @@
-import { groq } from "@ai-sdk/groq";
+import { openai } from "@ai-sdk/openai";
 import { generateText, tool } from "ai";
 import { z } from "zod";
 import { inngest } from "./client";
@@ -19,8 +19,8 @@ export const aosMvcGoldenPath = inngest.createFunction(
     if (!parsed.success) {
       throw new Error("invalid_mvc_request");
     }
-    if (!process.env.GROQ_API_KEY) {
-      throw new Error("missing_env:GROQ_API_KEY");
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error("missing_env:OPENAI_API_KEY");
     }
 
     const { request_id, input } = parsed.data;
@@ -28,7 +28,7 @@ export const aosMvcGoldenPath = inngest.createFunction(
 
     const llmAndTool = await step.run("llm-call-and-tool-execution", async () => {
       const result = await generateText({
-        model: groq(process.env.AOS_GROQ_MODEL || "llama-3.3-70b-versatile"),
+        model: openai("gpt-4o-mini"),
         prompt:
           "You are executing the AOS Minimal Viable Conformance probe. Call inspect_text exactly once with the user's input. Do not answer directly and do not request any other tool.",
         tools: {
@@ -60,8 +60,8 @@ export const aosMvcGoldenPath = inngest.createFunction(
       }
 
       return {
-        provider: "groq",
-        model: process.env.AOS_GROQ_MODEL || "llama-3.3-70b-versatile",
+        provider: "openai",
+        model: "gpt-4o-mini",
         llm_call_count: result.steps.length,
         tool_call_count: result.toolResults.length,
         tool_name: calledTool.toolName,
